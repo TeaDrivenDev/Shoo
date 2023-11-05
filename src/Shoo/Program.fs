@@ -2,18 +2,18 @@
 
 open System
 open Avalonia
-open Avalonia.ReactiveUI
+open Elmish.Avalonia.AppBuilder
 
 module Program =
 
-    [<CompiledName "BuildAvaloniaApp">] 
-    let buildAvaloniaApp () = 
+    [<CompiledName "BuildAvaloniaApp">]
+    let buildAvaloniaApp () =
         AppBuilder
             .Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace(areas = Array.empty)
-            .UseReactiveUI()
+            .UseElmishBindings()
 
     [<EntryPoint; STAThread>]
     let main argv =

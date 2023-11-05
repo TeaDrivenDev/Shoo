@@ -4,7 +4,7 @@ open Avalonia
 open Avalonia.Controls
 open Avalonia.Markup.Xaml
 
-type MainWindow () as this = 
+type MainWindowView () as this = 
     inherit Window ()
 
     do this.InitializeComponent()

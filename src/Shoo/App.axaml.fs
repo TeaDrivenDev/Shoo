@@ -1,23 +1,28 @@
 namespace Shoo
 
 open Avalonia
-open Avalonia.Controls.ApplicationLifetimes
 open Avalonia.Markup.Xaml
-open Shoo.ViewModels
+open Avalonia.Controls.ApplicationLifetimes
+
 open Shoo.Views
 
 type App() =
     inherit Application()
 
     override this.Initialize() =
-            AvaloniaXamlLoader.Load(this)
+        // Initialize Avalonia controls from NuGet packages:
+        let _ = typeof<Avalonia.Controls.DataGrid>
+
+        AvaloniaXamlLoader.Load(this)
 
     override this.OnFrameworkInitializationCompleted() =
-
-
         match this.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as desktop ->
-             desktop.MainWindow <- MainWindow(DataContext = MainWindowViewModel())
-        | _ -> ()
+            let view = MainWindowView()
+            desktop.MainWindow <- view
+            ViewModels.MainWindowViewModel.vm.StartElmishLoop(view)
+        | _ ->
+            // leave this here for design view re-renders
+            ()
 
         base.OnFrameworkInitializationCompleted()
