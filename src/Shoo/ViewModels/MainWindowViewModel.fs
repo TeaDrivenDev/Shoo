@@ -1,24 +1,58 @@
 ﻿namespace Shoo.ViewModels
 
+open System
+open System.IO
+
 open Elmish.Avalonia
 
 module MainWindowViewModel =
     type Model =
         {
-            Message: string
+            SourceDirectory: string
+            DestinationDirectory: string
+            IsSourceDirectoryValid: bool
+            IsDestinationDirectoryValid: bool
         }
 
-    type Message = Terminate
+    type Message =
+        | UpdateSourceDirectory of string
+        | UpdateDestinationDirectory of string
+        | Terminate
 
-    let init () = { Message = "Shoo" }
+    let init () =
+        {
+            SourceDirectory = ""
+            DestinationDirectory = ""
+            IsSourceDirectoryValid = false
+            IsDestinationDirectoryValid = false
+        }
 
     let update message model =
         match message with
+        | UpdateSourceDirectory value ->
+            {
+                model with
+                    SourceDirectory = value
+                    IsSourceDirectoryValid =
+                        not <| String.IsNullOrWhiteSpace value
+                        && File.Exists value
+            }
+        | UpdateDestinationDirectory value ->
+            {
+                model with
+                    DestinationDirectory = value
+                    IsDestinationDirectoryValid =
+                        not <| String.IsNullOrWhiteSpace value
+                        && File.Exists value
+            }
         | Terminate -> model
 
     let bindings () =
         [
-            "Message" |> Binding.oneWay (fun m -> m.Message)
+            "SourceDirectory" |> Binding.twoWay((fun m -> m.SourceDirectory), (fun s -> UpdateSourceDirectory s))
+            "DestinationDirectory" |> Binding.twoWay((fun m -> m.DestinationDirectory), (fun s -> UpdateDestinationDirectory s))
+            "IsSourceDirectoryValid" |> Binding.oneWay(fun m -> m.IsSourceDirectoryValid)
+            "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.IsDestinationDirectoryValid)
         ]
 
     let designVM = ViewModel.designInstance (init()) (bindings())
