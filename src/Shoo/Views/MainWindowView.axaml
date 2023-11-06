@@ -71,5 +71,25 @@
              Margin="7 0"
              Text="{Binding FileTypes}"
              Watermark="File Types" />
+
+    <Grid Grid.Row="2" IsEnabled="False">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBox Grid.Row="2"
+               Grid.Column="0"
+               Margin="7 4 0 0"
+               Watermark="Replacements File"
+               Text="{Binding ReplacementsFileName}" />
+
+      <Button Grid.Column="1"
+              Width="25"
+              Height="25"
+              Margin="5"
+              Padding="0" HorizontalContentAlignment="Center"
+              Content="…" />
+    </Grid>
   </Grid>
 </Window>

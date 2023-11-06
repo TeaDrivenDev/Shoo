@@ -12,6 +12,7 @@ module MainWindowViewModel =
             SourceDirectory: ConfiguredDirectory
             DestinationDirectory: ConfiguredDirectory
             FileTypes: string
+            ReplacementsFileName: string
         }
 
     type Message =
@@ -27,6 +28,7 @@ module MainWindowViewModel =
             SourceDirectory = ConfiguredDirectory.Empty
             DestinationDirectory = ConfiguredDirectory.Empty
             FileTypes = ""
+            ReplacementsFileName = ""
         },
         Cmd.none
 
