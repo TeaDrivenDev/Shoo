@@ -6,12 +6,21 @@ open System.IO
 open Elmish.Avalonia
 
 module MainWindowViewModel =
+    type ConfiguredDirectory =
+        {
+            Path: string
+            PathExists: bool
+        } with
+        static member Empty =
+            {
+                Path = ""
+                PathExists = false
+            }
+
     type Model =
         {
-            SourceDirectory: string
-            DestinationDirectory: string
-            IsSourceDirectoryValid: bool
-            IsDestinationDirectoryValid: bool
+            SourceDirectory: ConfiguredDirectory
+            DestinationDirectory: ConfiguredDirectory
         }
 
     type Message =
@@ -19,12 +28,16 @@ module MainWindowViewModel =
         | UpdateDestinationDirectory of string
         | Terminate
 
+    let createConfiguredDirectory path =
+        {
+            Path = path
+            PathExists = not <| String.IsNullOrWhiteSpace path && Directory.Exists path
+        }
+
     let init () =
         {
-            SourceDirectory = ""
-            DestinationDirectory = ""
-            IsSourceDirectoryValid = false
-            IsDestinationDirectoryValid = false
+            SourceDirectory = ConfiguredDirectory.Empty
+            DestinationDirectory = ConfiguredDirectory.Empty
         }
 
     let update message model =
@@ -32,27 +45,21 @@ module MainWindowViewModel =
         | UpdateSourceDirectory value ->
             {
                 model with
-                    SourceDirectory = value
-                    IsSourceDirectoryValid =
-                        not <| String.IsNullOrWhiteSpace value
-                        && Directory.Exists value
+                    SourceDirectory = createConfiguredDirectory value
             }
         | UpdateDestinationDirectory value ->
             {
                 model with
-                    DestinationDirectory = value
-                    IsDestinationDirectoryValid =
-                        not <| String.IsNullOrWhiteSpace value
-                        && Directory.Exists value
+                    DestinationDirectory = createConfiguredDirectory value
             }
         | Terminate -> model
 
     let bindings () =
         [
-            "SourceDirectory" |> Binding.twoWay((fun m -> m.SourceDirectory), (fun s -> UpdateSourceDirectory s))
-            "DestinationDirectory" |> Binding.twoWay((fun m -> m.DestinationDirectory), (fun s -> UpdateDestinationDirectory s))
-            "IsSourceDirectoryValid" |> Binding.oneWay(fun m -> m.IsSourceDirectoryValid)
-            "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.IsDestinationDirectoryValid)
+            "SourceDirectory" |> Binding.twoWay((fun m -> m.SourceDirectory.Path), (fun s -> UpdateSourceDirectory s))
+            "DestinationDirectory" |> Binding.twoWay((fun m -> m.DestinationDirectory.Path), (fun s -> UpdateDestinationDirectory s))
+            "IsSourceDirectoryValid" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists)
+            "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.DestinationDirectory.PathExists)
         ]
 
     let designVM = ViewModel.designInstance (init()) (bindings())
