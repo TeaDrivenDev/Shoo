@@ -23,73 +23,83 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
+
       <RowDefinition />
     </Grid.RowDefinitions>
 
-    <Grid Grid.Row="0"
-          Margin="5">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
+    <Grid Grid.Row="0">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
 
-      <TextBox Grid.Column="0"
-               Margin="2 0"
-               Classes.Invalid="{Binding !IsSourceDirectoryValid}"
-               Classes.Valid="{Binding IsSourceDirectoryValid}"
-               Text="{Binding SourceDirectory}"
-               Watermark="Source Directory" />
-      <Button Grid.Column="1"
-              Width="25"
-              Height="25"
-              Margin="5"
-              Padding="0"
-              HorizontalContentAlignment="Center"
-              Command="{Binding SelectSourceDirectory}"
-              Content="…" />
+      <Grid Grid.Row="0"
+            Margin="5">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
-      <TextBox Grid.Column="2"
-               Margin="2 0"
-               Classes.Invalid="{Binding !IsDestinationDirectoryValid}"
-               Classes.Valid="{Binding IsDestinationDirectoryValid}"
-               Text="{Binding DestinationDirectory}"
-               Watermark="Destination Directory" />
-      <Button Grid.Column="3"
-              Width="25"
-              Height="25"
-              Margin="5"
-              Padding="0"
-              HorizontalContentAlignment="Center"
-              Command="{Binding SelectDestinationDirectory}"
-              Content="…" />
-    </Grid>
+        <TextBox Grid.Column="0"
+                 Margin="2 0"
+                 Classes.Invalid="{Binding !IsSourceDirectoryValid}"
+                 Classes.Valid="{Binding IsSourceDirectoryValid}"
+                 Text="{Binding SourceDirectory}"
+                 Watermark="Source Directory" />
+        <Button Grid.Column="1"
+                Width="25"
+                Height="25"
+                Margin="5"
+                Padding="0"
+                HorizontalContentAlignment="Center"
+                Command="{Binding SelectSourceDirectory}"
+                Content="…" />
 
-    <TextBox Grid.Row="1"
-             Margin="7 0"
-             Text="{Binding FileTypes}"
-             Watermark="File Types" />
+        <TextBox Grid.Column="2"
+                 Margin="2 0"
+                 Classes.Invalid="{Binding !IsDestinationDirectoryValid}"
+                 Classes.Valid="{Binding IsDestinationDirectoryValid}"
+                 Text="{Binding DestinationDirectory}"
+                 Watermark="Destination Directory" />
+        <Button Grid.Column="3"
+                Width="25"
+                Height="25"
+                Margin="5"
+                Padding="0"
+                HorizontalContentAlignment="Center"
+                Command="{Binding SelectDestinationDirectory}"
+                Content="…" />
+      </Grid>
 
-    <Grid Grid.Row="2" IsEnabled="False">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
+      <TextBox Grid.Row="1"
+               Margin="7 0"
+               Text="{Binding FileTypes}"
+               Watermark="File Types" />
 
-      <TextBox Grid.Row="2"
-               Grid.Column="0"
-               Margin="7 4 0 0"
-               Watermark="Replacements File"
-               Text="{Binding ReplacementsFileName}" />
+      <Grid Grid.Row="2"
+            IsEnabled="False">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
-      <Button Grid.Column="1"
-              Width="25"
-              Height="25"
-              Margin="5"
-              Padding="0" HorizontalContentAlignment="Center"
-              Content="…" />
+        <TextBox Grid.Row="2"
+                 Grid.Column="0"
+                 Margin="7 4 0 0"
+                 Text="{Binding ReplacementsFileName}"
+                 Watermark="Replacements File" />
+
+        <Button Grid.Column="1"
+                Width="25"
+                Height="25"
+                Margin="5"
+                Padding="0"
+                HorizontalContentAlignment="Center"
+                Content="…" />
+      </Grid>
     </Grid>
   </Grid>
 </Window>
