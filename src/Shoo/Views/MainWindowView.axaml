@@ -66,5 +66,10 @@
               Command="{Binding SelectDestinationDirectory}"
               Content="…" />
     </Grid>
+
+    <TextBox Grid.Row="1"
+             Margin="7 0"
+             Text="{Binding FileTypes}"
+             Watermark="File Types" />
   </Grid>
 </Window>

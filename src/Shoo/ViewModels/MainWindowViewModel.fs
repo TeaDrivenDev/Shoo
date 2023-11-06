@@ -11,6 +11,7 @@ module MainWindowViewModel =
         {
             SourceDirectory: ConfiguredDirectory
             DestinationDirectory: ConfiguredDirectory
+            FileTypes: string
         }
 
     type Message =
@@ -18,12 +19,14 @@ module MainWindowViewModel =
         | UpdateDestinationDirectory of string option
         | SelectSourceDirectory
         | SelectDestinationDirectory
+        | UpdateFileTypes of string
         | Terminate
 
     let init () =
         {
             SourceDirectory = ConfiguredDirectory.Empty
             DestinationDirectory = ConfiguredDirectory.Empty
+            FileTypes = ""
         },
         Cmd.none
 
@@ -54,6 +57,7 @@ module MainWindowViewModel =
             model, Cmd.OfTask.perform tryPickFolder () UpdateSourceDirectory
         | SelectDestinationDirectory ->
             model, Cmd.OfTask.perform tryPickFolder () UpdateDestinationDirectory
+        | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes }, Cmd.none
         | Terminate -> model, Cmd.none
 
     let bindings () =
@@ -64,6 +68,7 @@ module MainWindowViewModel =
             "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.DestinationDirectory.PathExists)
             "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
             "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
+            "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
         ]
 
     let designVM = ViewModel.designInstance (fst (init())) (bindings())
