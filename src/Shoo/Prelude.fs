@@ -1,7 +1,11 @@
-﻿module TeaDrivenDev.Prelude
+﻿[<AutoOpen>]
+module TeaDrivenDev.Prelude
 
 open System
 open System.IO
+
+let asFst second first = first, second
+let asSnd first second = first, second
 
 module IO =
     type ConfiguredDirectory =

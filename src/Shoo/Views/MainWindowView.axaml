@@ -48,6 +48,7 @@
               Margin="5"
               Padding="0"
               HorizontalContentAlignment="Center"
+              Command="{Binding SelectSourceDirectory}"
               Content="…" />
 
       <TextBox Grid.Column="2"
@@ -62,6 +63,7 @@
               Margin="5"
               Padding="0"
               HorizontalContentAlignment="Center"
+              Command="{Binding SelectDestinationDirectory}"
               Content="…" />
     </Grid>
   </Grid>
