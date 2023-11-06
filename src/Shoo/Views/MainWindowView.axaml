@@ -23,11 +23,11 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
-
       <RowDefinition />
     </Grid.RowDefinitions>
 
-    <Grid Grid.Row="0">
+    <Grid Grid.Row="0"
+          IsEnabled="{Binding !IsActive}">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
@@ -101,5 +101,23 @@
                 Content="…" />
       </Grid>
     </Grid>
+
+    <ToggleButton Grid.Row="1"
+                  Width="120"
+                  Margin="5"
+                  HorizontalAlignment="Center"
+                  HorizontalContentAlignment="Center"
+                  Classes.IsActive="{Binding IsActive}"
+                  Classes.IsInactive="{Binding !IsActive}"
+                  IsChecked="{Binding IsActive}">
+      <ToggleButton.Styles>
+        <Style Selector="ToggleButton.IsActive">
+          <Setter Property="Content" Value="Deactivate" />
+        </Style>
+        <Style Selector="ToggleButton.IsInactive">
+          <Setter Property="Content" Value="Activate" />
+        </Style>
+      </ToggleButton.Styles>
+    </ToggleButton>
   </Grid>
 </Window>

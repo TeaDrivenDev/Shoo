@@ -13,6 +13,7 @@ module MainWindowViewModel =
             DestinationDirectory: ConfiguredDirectory
             FileTypes: string
             ReplacementsFileName: string
+            IsActive: bool
         }
 
     type Message =
@@ -21,6 +22,7 @@ module MainWindowViewModel =
         | SelectSourceDirectory
         | SelectDestinationDirectory
         | UpdateFileTypes of string
+        | ChangeActive of bool
         | Terminate
 
     let init () =
@@ -29,6 +31,7 @@ module MainWindowViewModel =
             DestinationDirectory = ConfiguredDirectory.Empty
             FileTypes = ""
             ReplacementsFileName = ""
+            IsActive = false
         },
         Cmd.none
 
@@ -60,6 +63,7 @@ module MainWindowViewModel =
         | SelectDestinationDirectory ->
             model, Cmd.OfTask.perform tryPickFolder () UpdateDestinationDirectory
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes }, Cmd.none
+        | ChangeActive active -> { model with IsActive = active }, Cmd.none
         | Terminate -> model, Cmd.none
 
     let bindings () =
@@ -71,6 +75,7 @@ module MainWindowViewModel =
             "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
             "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
             "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
+            "IsActive" |> Binding.twoWay((fun m -> m.IsActive), ChangeActive)
         ]
 
     let designVM = ViewModel.designInstance (fst (init())) (bindings())
