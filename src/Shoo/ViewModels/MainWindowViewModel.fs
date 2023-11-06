@@ -54,7 +54,6 @@ module MainWindowViewModel =
                     {
                         model with
                             DestinationDirectory = createConfiguredDirectory path
-
                     })
             |> Option.defaultValue model
             |> asFst Cmd.none
@@ -75,6 +74,7 @@ module MainWindowViewModel =
             "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
             "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
             "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
+            "CanActivate" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
             "IsActive" |> Binding.twoWay((fun m -> m.IsActive), ChangeActive)
         ]
 

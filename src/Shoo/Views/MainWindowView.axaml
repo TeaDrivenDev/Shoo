@@ -109,7 +109,8 @@
                   HorizontalContentAlignment="Center"
                   Classes.IsActive="{Binding IsActive}"
                   Classes.IsInactive="{Binding !IsActive}"
-                  IsChecked="{Binding IsActive}">
+                  IsChecked="{Binding IsActive}"
+                  IsEnabled="{Binding CanActivate}">
       <ToggleButton.Styles>
         <Style Selector="ToggleButton.IsActive">
           <Setter Property="Content" Value="Deactivate" />
