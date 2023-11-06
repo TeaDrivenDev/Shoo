@@ -35,7 +35,7 @@ module MainWindowViewModel =
                     SourceDirectory = value
                     IsSourceDirectoryValid =
                         not <| String.IsNullOrWhiteSpace value
-                        && File.Exists value
+                        && Directory.Exists value
             }
         | UpdateDestinationDirectory value ->
             {
@@ -43,7 +43,7 @@ module MainWindowViewModel =
                     DestinationDirectory = value
                     IsDestinationDirectoryValid =
                         not <| String.IsNullOrWhiteSpace value
-                        && File.Exists value
+                        && Directory.Exists value
             }
         | Terminate -> model
 
