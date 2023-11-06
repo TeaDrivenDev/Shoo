@@ -1,22 +1,10 @@
 ﻿namespace Shoo.ViewModels
 
-open System
-open System.IO
-
 open Elmish.Avalonia
 
-module MainWindowViewModel =
-    type ConfiguredDirectory =
-        {
-            Path: string
-            PathExists: bool
-        } with
-        static member Empty =
-            {
-                Path = ""
-                PathExists = false
-            }
+open TeaDrivenDev.Prelude.IO
 
+module MainWindowViewModel =
     type Model =
         {
             SourceDirectory: ConfiguredDirectory
@@ -27,12 +15,6 @@ module MainWindowViewModel =
         | UpdateSourceDirectory of string
         | UpdateDestinationDirectory of string
         | Terminate
-
-    let createConfiguredDirectory path =
-        {
-            Path = path
-            PathExists = not <| String.IsNullOrWhiteSpace path && Directory.Exists path
-        }
 
     let init () =
         {
