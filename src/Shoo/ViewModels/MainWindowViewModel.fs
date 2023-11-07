@@ -102,7 +102,11 @@ module MainWindowViewModel =
             "RemoveFile" |> Binding.cmd RemoveFile
         ]
 
-    let designVM = ViewModel.designInstance (fst (init())) (bindings())
+    let designVM =
+        let model, _ = init ()
+        model.Files.Add({ Name = string DateTime.Now })
+
+        ViewModel.designInstance model (bindings ())
 
     let vm () =
         let tryPickFolder () =
