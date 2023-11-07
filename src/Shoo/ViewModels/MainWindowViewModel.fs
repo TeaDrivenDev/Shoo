@@ -42,8 +42,8 @@ module MainWindowViewModel =
             ReplacementsFileName = ""
             IsActive = false
             Files = ObservableCollection()
-        },
-        Cmd.none
+        }
+        |> withoutCommand
 
     let update tryPickFolder message model =
         match message with
@@ -56,7 +56,7 @@ module MainWindowViewModel =
                             SourceDirectory = createConfiguredDirectory path
                     })
             |> Option.defaultValue model
-            |> asFst Cmd.none
+            |> withoutCommand
         | UpdateDestinationDirectory value ->
             value
             |> Option.map
@@ -66,23 +66,23 @@ module MainWindowViewModel =
                             DestinationDirectory = createConfiguredDirectory path
                     })
             |> Option.defaultValue model
-            |> asFst Cmd.none
+            |> withoutCommand
         | SelectSourceDirectory ->
             model, Cmd.OfTask.perform tryPickFolder () UpdateSourceDirectory
         | SelectDestinationDirectory ->
             model, Cmd.OfTask.perform tryPickFolder () UpdateDestinationDirectory
-        | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes }, Cmd.none
-        | ChangeActive active -> { model with IsActive = active }, Cmd.none
-        | Terminate -> model, Cmd.none
+        | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
+        | ChangeActive active -> { model with IsActive = active } |> withoutCommand
+        | Terminate -> model |> withoutCommand
         // TODO Temporary
         | AddFile ->
             //model.Files.Add({ Name = string DateTime.Now})
-            model, Cmd.none
+            model |> withoutCommand
         | RemoveFile ->
             if model.Files.Count > 0
             then model.Files.RemoveAt 0
 
-            model, Cmd.none
+            model |> withoutCommand
 
     let bindings () =
         [

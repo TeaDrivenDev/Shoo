@@ -4,8 +4,12 @@ module TeaDrivenDev.Prelude
 open System
 open System.IO
 
+open Elmish
+
 let asFst second first = first, second
 let asSnd first second = first, second
+
+let withoutCommand model = model, Cmd.none
 
 module IO =
     type ConfiguredDirectory =
