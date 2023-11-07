@@ -1,5 +1,8 @@
 ﻿namespace Shoo.ViewModels
 
+open System
+open System.Collections.ObjectModel
+
 open Elmish
 open Elmish.Avalonia
 
@@ -7,6 +10,8 @@ open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
 module MainWindowViewModel =
+    type File = { Name: string }
+
     type Model =
         {
             SourceDirectory: ConfiguredDirectory
@@ -14,6 +19,7 @@ module MainWindowViewModel =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
+            Files: ObservableCollection<File>
         }
 
     type Message =
@@ -24,6 +30,9 @@ module MainWindowViewModel =
         | UpdateFileTypes of string
         | ChangeActive of bool
         | Terminate
+        // TODO Temporary
+        | AddFile
+        | RemoveFile
 
     let init () =
         {
@@ -32,6 +41,7 @@ module MainWindowViewModel =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
+            Files = ObservableCollection()
         },
         Cmd.none
 
@@ -64,6 +74,15 @@ module MainWindowViewModel =
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes }, Cmd.none
         | ChangeActive active -> { model with IsActive = active }, Cmd.none
         | Terminate -> model, Cmd.none
+        // TODO Temporary
+        | AddFile ->
+            model.Files.Add({ Name = string DateTime.Now})
+            model, Cmd.none
+        | RemoveFile ->
+            if model.Files.Count > 0
+            then model.Files.RemoveAt 0
+
+            model, Cmd.none
 
     let bindings () =
         [
@@ -76,6 +95,11 @@ module MainWindowViewModel =
             "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
             "CanActivate" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
             "IsActive" |> Binding.twoWay((fun m -> m.IsActive), ChangeActive)
+            "Files" |> Binding.oneWay(fun m -> m.Files)
+
+            // TODO Temporary
+            "AddFile" |> Binding.cmd AddFile
+            "RemoveFile" |> Binding.cmd RemoveFile
         ]
 
     let designVM = ViewModel.designInstance (fst (init())) (bindings())

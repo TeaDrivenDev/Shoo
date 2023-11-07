@@ -102,23 +102,40 @@
       </Grid>
     </Grid>
 
-    <ToggleButton Grid.Row="1"
-                  Width="120"
-                  Margin="5"
-                  HorizontalAlignment="Center"
-                  HorizontalContentAlignment="Center"
-                  Classes.IsActive="{Binding IsActive}"
-                  Classes.IsInactive="{Binding !IsActive}"
-                  IsChecked="{Binding IsActive}"
-                  IsEnabled="{Binding CanActivate}">
-      <ToggleButton.Styles>
-        <Style Selector="ToggleButton.IsActive">
-          <Setter Property="Content" Value="Deactivate" />
-        </Style>
-        <Style Selector="ToggleButton.IsInactive">
-          <Setter Property="Content" Value="Activate" />
-        </Style>
-      </ToggleButton.Styles>
-    </ToggleButton>
+    <StackPanel Grid.Row="1"
+                Orientation="Horizontal">
+      <ToggleButton Grid.Row="1"
+                    Width="120"
+                    Margin="5"
+                    HorizontalAlignment="Center"
+                    HorizontalContentAlignment="Center"
+                    Classes.IsActive="{Binding IsActive}"
+                    Classes.IsInactive="{Binding !IsActive}"
+                    IsChecked="{Binding IsActive}"
+                    IsEnabled="{Binding CanActivate}">
+        <ToggleButton.Styles>
+          <Style Selector="ToggleButton.IsActive">
+            <Setter Property="Content" Value="Deactivate" />
+          </Style>
+          <Style Selector="ToggleButton.IsInactive">
+            <Setter Property="Content" Value="Activate" />
+          </Style>
+        </ToggleButton.Styles>
+      </ToggleButton>
+
+      <!--  TODO Temporary  -->
+      <Button Command="{Binding AddFile}"
+              Content="Add File" />
+      <Button Command="{Binding RemoveFile}"
+              Content="Remove File" />
+    </StackPanel>
+
+    <DataGrid Grid.Row="2"
+              ItemsSource="{Binding Files}">
+      <DataGrid.Columns>
+        <DataGridTextColumn Binding="{Binding Name}"
+                            Header="Name" />
+      </DataGrid.Columns>
+    </DataGrid>
   </Grid>
 </Window>
