@@ -18,6 +18,7 @@
     <Compile Include="ViewModels\FileViewModel.fs" />
     <Compile Include="ViewModels\MainWindowViewModel.fs" />
     <Compile Include="Views\MainWindowView.axaml.fs" />
+    <Compile Include="UIUtilities.fs" />
     <Compile Include="ViewLocator.fs" />
     <Compile Include="App.axaml.fs" />
     <Compile Include="Program.fs" />

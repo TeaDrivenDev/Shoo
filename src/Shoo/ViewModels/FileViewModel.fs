@@ -54,7 +54,7 @@ module FileViewModel =
                 FullName = "AA"
                 FileName = "AAA"
                 Time = DateTime.Now
-                Size = 1234567L
+                Size = 1234567890L
                 MoveProgress = 37
                 MoveStatus = Moving
             }
