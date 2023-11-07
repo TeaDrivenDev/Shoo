@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="Prelude.fs" />
     <Compile Include="Services\FolderPickerService.fs" />
+    <Compile Include="ViewModels\FileViewModel.fs" />
     <Compile Include="ViewModels\MainWindowViewModel.fs" />
     <Compile Include="Views\MainWindowView.axaml.fs" />
     <Compile Include="ViewLocator.fs" />

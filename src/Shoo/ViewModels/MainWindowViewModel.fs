@@ -19,7 +19,7 @@ module MainWindowViewModel =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            Files: ObservableCollection<File>
+            Files: ObservableCollection<obj>
         }
 
     type Message =
@@ -76,7 +76,7 @@ module MainWindowViewModel =
         | Terminate -> model, Cmd.none
         // TODO Temporary
         | AddFile ->
-            model.Files.Add({ Name = string DateTime.Now})
+            //model.Files.Add({ Name = string DateTime.Now})
             model, Cmd.none
         | RemoveFile ->
             if model.Files.Count > 0
@@ -104,7 +104,7 @@ module MainWindowViewModel =
 
     let designVM =
         let model, _ = init ()
-        model.Files.Add({ Name = string DateTime.Now })
+        model.Files.Add(FileViewModel.designVM)
 
         ViewModel.designInstance model (bindings ())
 

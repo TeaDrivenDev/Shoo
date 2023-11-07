@@ -133,8 +133,21 @@
     <DataGrid Grid.Row="2"
               ItemsSource="{Binding Files}">
       <DataGrid.Columns>
-        <DataGridTextColumn Binding="{Binding Name}"
+        <DataGridTextColumn Binding="{Binding FileName}"
                             Header="Name" />
+        <DataGridTextColumn Binding="{Binding Time}"
+                            Header="Time" />
+        <DataGridTextColumn Binding="{Binding Size}"
+                            Header="Size" />
+        <DataGridTemplateColumn Header="Progress">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ProgressBar Maximum="100"
+                           Minimum="0"
+                           Value="{Binding MoveProgress}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
   </Grid>
