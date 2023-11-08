@@ -18,9 +18,17 @@
     <Style Selector="TextBox.Valid">
       <Setter Property="Background" Value="DarkGreen" />
     </Style>
+
+    <Style Selector="Button.SelectFile">
+      <Setter Property="Content" Value="…" />
+      <Setter Property="Width" Value="25" />
+      <Setter Property="Height" Value="25" />
+      <Setter Property="Margin" Value="3 0 0 0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
   </Window.Styles>
 
-  <Grid>
+  <Grid Margin="5">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
@@ -35,8 +43,7 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <Grid Grid.Row="0"
-            Margin="5">
+      <Grid Grid.Row="0">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
@@ -45,42 +52,34 @@
         </Grid.ColumnDefinitions>
 
         <TextBox Grid.Column="0"
-                 Margin="2 0"
                  Classes.Invalid="{Binding !IsSourceDirectoryValid}"
                  Classes.Valid="{Binding IsSourceDirectoryValid}"
                  Text="{Binding SourceDirectory}"
                  Watermark="Source Directory" />
         <Button Grid.Column="1"
-                Width="25"
-                Height="25"
-                Margin="5"
-                Padding="0"
-                HorizontalContentAlignment="Center"
-                Command="{Binding SelectSourceDirectory}"
-                Content="…" />
+                Margin="2 0 0 0"
+                Classes="SelectFile"
+                Command="{Binding SelectSourceDirectory}" />
 
         <TextBox Grid.Column="2"
-                 Margin="2 0"
+                 Margin="5 0 0 0"
                  Classes.Invalid="{Binding !IsDestinationDirectoryValid}"
                  Classes.Valid="{Binding IsDestinationDirectoryValid}"
                  Text="{Binding DestinationDirectory}"
                  Watermark="Destination Directory" />
         <Button Grid.Column="3"
-                Width="25"
-                Height="25"
-                Margin="5"
-                Padding="0"
-                HorizontalContentAlignment="Center"
-                Command="{Binding SelectDestinationDirectory}"
-                Content="…" />
+                Margin="3 0 0 0"
+                Classes="SelectFile"
+                Command="{Binding SelectDestinationDirectory}" />
       </Grid>
 
       <TextBox Grid.Row="1"
-               Margin="7 0"
+               Margin="0 5 0 0"
                Text="{Binding FileTypes}"
                Watermark="File Types" />
 
       <Grid Grid.Row="2"
+            Margin="0 5 0 0"
             IsEnabled="False">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
@@ -89,23 +88,18 @@
 
         <TextBox Grid.Row="2"
                  Grid.Column="0"
-                 Margin="7 4 0 0"
                  Text="{Binding ReplacementsFileName}"
                  Watermark="Replacements File" />
 
         <Button Grid.Column="1"
-                Width="25"
-                Height="25"
-                Margin="5"
-                Padding="0"
                 HorizontalContentAlignment="Center"
-                Content="…" />
+                Classes="SelectFile" />
       </Grid>
     </Grid>
 
-    <ToggleSwitch Grid.Row="1" Theme="{DynamicResource SimpleToggleSwitch}"
+    <ToggleSwitch Grid.Row="1"
                   Width="120"
-                  Margin="5"
+                  Margin="0 5"
                   HorizontalAlignment="Center"
                   HorizontalContentAlignment="Center"
                   Classes.IsActive="{Binding IsActive}"
@@ -116,7 +110,6 @@
                   OnContent="Active" />
 
     <DataGrid Grid.Row="2"
-              Margin="5 0"
               IsEnabled="{Binding IsActive}"
               ItemsSource="{Binding Files}">
       <DataGrid.Columns>
