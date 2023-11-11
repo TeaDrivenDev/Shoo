@@ -9,7 +9,20 @@
   </Application.DataTemplates>
 
   <Application.Styles>
-    <FluentTheme DensityStyle="Compact" />
+    <FluentTheme DensityStyle="Compact">
+      <FluentTheme.Palettes>
+        <!--  Palette for Light theme variant  -->
+        <ColorPaletteResources x:Key="Light"
+                               Accent="Green"
+                               ErrorText="Red"
+                               RegionColor="White" />
+        <!--  Palette for Dark theme variant  -->
+        <ColorPaletteResources x:Key="Dark"
+                               Accent="DarkGreen"
+                               ErrorText="Yellow"
+                               RegionColor="Black" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
   </Application.Styles>
 </Application>
