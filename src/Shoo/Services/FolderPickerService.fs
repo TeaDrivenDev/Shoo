@@ -18,7 +18,14 @@ type FolderPickerService(mainWindow: Window) =
             return
                 files
                 |> Seq.tryHead
-                |> Option.map (fun file -> System.Net.WebUtility.UrlDecode file.Path.AbsolutePath)
+                |> Option.map
+                    (fun file ->
+                        let uri =
+                            file.Path.AbsolutePath
+                            |> System.Net.WebUtility.UrlDecode
+                            |> Uri
+
+                        uri.AbsolutePath)
         }
 
 type Services() =

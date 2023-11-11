@@ -2,6 +2,9 @@
 
 open System
 open System.Collections.ObjectModel
+open System.IO
+
+open FSharp.Control.Reactive
 
 open Elmish
 open Elmish.Avalonia
@@ -30,8 +33,8 @@ module MainWindowViewModel =
         | UpdateFileTypes of string
         | ChangeActive of bool
         | Terminate
+        | AddFile of string
         // TODO Temporary
-        | AddFile
         | RemoveFile
 
     let init () =
@@ -74,10 +77,12 @@ module MainWindowViewModel =
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
-        // TODO Temporary
-        | AddFile ->
-            //model.Files.Add({ Name = string DateTime.Now})
+        | AddFile path ->
+            let vm = FileViewModel.vm path
+
+            model.Files.Add(vm)
             model |> withoutCommand
+        // TODO Temporary
         | RemoveFile ->
             if model.Files.Count > 0
             then model.Files.RemoveAt 0
@@ -98,7 +103,6 @@ module MainWindowViewModel =
             "Files" |> Binding.oneWay(fun m -> m.Files)
 
             // TODO Temporary
-            "AddFile" |> Binding.cmd AddFile
             "RemoveFile" |> Binding.cmd RemoveFile
         ]
 
@@ -108,12 +112,35 @@ module MainWindowViewModel =
 
         ViewModel.designInstance model (bindings ())
 
+    let subscriptions (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
+        let watchFileSystem dispatch =
+            let subscription =
+                watcher.Renamed
+                |> Observable.subscribe (fun e -> e.FullPath |> AddFile |> dispatch)
+
+            watcher.Path <- model.SourceDirectory.Path
+            watcher.EnableRaisingEvents <- true
+
+            {
+                new IDisposable with
+                    member _.Dispose() =
+                        watcher.EnableRaisingEvents <- false
+                        subscription.Dispose()
+            }
+
+        [
+            if model.IsActive then [ nameof watchFileSystem ], watchFileSystem
+        ]
+
     let vm () =
         let tryPickFolder () =
             let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
             fileProvider.TryPickFolder()
 
+        let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+
         AvaloniaProgram.mkProgram init (update tryPickFolder) bindings
+        |> AvaloniaProgram.withSubscription (subscriptions watcher)
         |> ElmishViewModel.create
         |> ElmishViewModel.terminateOnViewUnloaded Terminate
         :> IElmishViewModel
