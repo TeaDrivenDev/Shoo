@@ -22,7 +22,7 @@ module MainWindowViewModel =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            Files: ObservableCollection<obj>
+            Files: ObservableCollection<FileViewModel>
         }
 
     type Message =
@@ -46,7 +46,7 @@ module MainWindowViewModel =
             IsActive = false
             Files = ObservableCollection()
         }
-        |> withoutCommand
+        |> asFst (Cmd.ofMsg (AddFile @"C:\hiberfil.sys"))
 
     let update tryPickFolder message model =
         match message with
@@ -78,7 +78,7 @@ module MainWindowViewModel =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | AddFile path ->
-            let vm = FileViewModel.vm path
+            let vm = FileViewModel path
 
             model.Files.Add(vm)
             model |> withoutCommand
@@ -108,7 +108,7 @@ module MainWindowViewModel =
 
     let designVM =
         let model, _ = init ()
-        model.Files.Add(FileViewModel.designVM)
+        model.Files.Add(FileViewModel @"c:\hiberfil.sys")
 
         ViewModel.designInstance model (bindings ())
 

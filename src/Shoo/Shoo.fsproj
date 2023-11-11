@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="Prelude.fs" />
     <Compile Include="Services\FolderPickerService.fs" />
+    <Compile Include="ViewModels\ReactiveViewModelBase.fs" />
     <Compile Include="ViewModels\FileViewModel.fs" />
     <Compile Include="ViewModels\MainWindowViewModel.fs" />
     <Compile Include="Views\MainWindowView.axaml.fs" />
@@ -35,5 +36,6 @@
     <PackageReference Include="Elmish.Avalonia" Version="1.1.0" />
     <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="ReactiveUI" Version="18.4.44" />
   </ItemGroup>
 </Project>

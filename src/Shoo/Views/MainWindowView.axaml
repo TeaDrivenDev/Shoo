@@ -120,7 +120,7 @@
                             Binding="{Binding Time}"
                             Header="Time" />
         <DataGridTextColumn Width="120"
-                            Binding="{Binding Size,
+                            Binding="{Binding FileSize,
                                                       StringFormat='{}{0:F1} MB',
                                                       Converter={x:Static uiUtilities:BytesToMegabytesConverter.Instance}}"
                             Header="Size" />
@@ -128,9 +128,12 @@
                                 Header="Progress">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <ProgressBar Maximum="100"
-                           Minimum="0"
-                           Value="{Binding MoveProgress}" />
+              <Grid>
+                <ProgressBar MinWidth="1"
+                             Margin="10 0"
+                             ShowProgressText="True"
+                             Value="{Binding MoveProgress}" />
+              </Grid>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
