@@ -119,11 +119,19 @@
         <DataGridTextColumn Width="200"
                             Binding="{Binding Time}"
                             Header="Time" />
-        <DataGridTextColumn Width="120"
-                            Binding="{Binding FileSize,
+        <DataGridTemplateColumn Width="120"
+                                Header="Size">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Margin="10 0"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Center"
+                         Text="{Binding FileSize,
                                                       StringFormat='{}{0:F1} MB',
-                                                      Converter={x:Static uiUtilities:BytesToMegabytesConverter.Instance}}"
-                            Header="Size" />
+                                                      Converter={x:Static uiUtilities:BytesToMegabytesConverter.Instance}}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
         <DataGridTemplateColumn Width="120"
                                 Header="Progress">
           <DataGridTemplateColumn.CellTemplate>
