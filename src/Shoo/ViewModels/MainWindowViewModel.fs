@@ -46,7 +46,9 @@ module MainWindowViewModel =
             IsActive = false
             Files = ObservableCollection()
         }
-        |> withoutCommand
+        // Immediately add an item to the collection to avoid having to go through the motions in
+        // the application
+        |> asFst (Cmd.ofMsg (AddFile ...a file path that exists...))
 
     let update tryPickFolder message model =
         match message with
@@ -78,6 +80,10 @@ module MainWindowViewModel =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | AddFile path ->
+            // The DataGridColumn bindings work for this.
+            let vm = FileViewModel.designVM
+
+            // The DataGridColumn bindings do not work for this.
             let vm = FileViewModel.vm path
 
             model.Files.Add(vm)
