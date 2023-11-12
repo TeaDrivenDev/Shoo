@@ -75,8 +75,7 @@ module MainWindowViewModel =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | AddFile path ->
-            let vm = FileViewModel.vm path
-
+            let vm = new FileViewModel.FileViewModel(path)
             model.Files.Add(vm)
             model |> withoutCommand
         // TODO Temporary
@@ -137,20 +136,23 @@ module MainWindowViewModel =
     type MainWindowViewModel() = 
         inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
 
-        member this.SourceDirectory = this.BindValue(fun m -> m.SourceDirectory)
-        member this.DestinationDirectory = this.BindValue(fun m -> m.DestinationDirectory)
-        member this.IsDestinationDirectoryValid = this.BindValue((fun m -> m.DestinationDirectory.PathExists), nameof this.IsDestinationDirectoryValid)
-        member this.ReplacementsFileName = this.BindValue(fun m -> m.ReplacementsFileName)
+        member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory)
+        member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory)
+        member this.IsDestinationDirectoryValid = this.BindModel((fun m -> m.DestinationDirectory.PathExists), nameof this.IsDestinationDirectoryValid)
+        member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
         member this.FileTypes 
-            with get () = this.BindValue(fun m -> m.FileTypes)
+            with get () = this.BindModel(fun m -> m.FileTypes)
             and set value = this.Dispatch(UpdateFileTypes value)
         
-        member this.CanActivate = this.BindValue((fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists), nameof this.CanActivate)
+        member this.CanActivate = this.BindModel((fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists), nameof this.CanActivate)
         member this.IsActive 
-            with get () = this.BindValue(fun m -> m.IsActive)
+            with get () = this.BindModel(fun m -> m.IsActive)
             and set value = this.Dispatch(ChangeActive value)
         
-        member this.Files = this.BindValue(fun m -> m.Files)
+        member this.Files = this.BindModel(fun m -> m.Files)
+
+        member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
+        member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
 
         override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
             Program.mkAvaloniaProgram init (update tryPickFolder)
@@ -159,4 +161,4 @@ module MainWindowViewModel =
             |> Program.withConsoleTrace
             |> this.RunProgram view
 
-    let vm() = new MainWindowViewModel()
+    

@@ -3,6 +3,7 @@
 open System
 open System.IO
 open Elmish.Avalonia
+open Elmish
 
 module FileViewModel =
     type MoveFileStatus = Waiting | Moving | Complete | Failed
@@ -61,8 +62,17 @@ module FileViewModel =
 
         ViewModel.designInstance model (bindings ())
 
-    let vm path =
-        AvaloniaProgram.mkSimple (init path) update bindings
-        |> ElmishViewModel.create
-        |> ElmishViewModel.terminateOnViewUnloaded Terminate
-        :> IElmishViewModel
+
+    type FileViewModel(path: string) = 
+        inherit ReactiveElmishViewModel<Model, Message>(init "" ())
+
+        member this.FileName = this.BindModel(fun m -> m.FileName)
+        member this.Time = this.BindModel(fun m -> m.Time)
+        member this.Size = this.BindModel(fun m -> m.Size)
+        member this.MoveProgress = this.BindModel(fun m -> m.MoveProgress)
+        
+        override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
+            Program.mkAvaloniaSimple (init path) update
+            |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+            |> Program.withConsoleTrace
+            |> this.RunProgram view
