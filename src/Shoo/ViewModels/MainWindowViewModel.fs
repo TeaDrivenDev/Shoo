@@ -138,13 +138,13 @@ module MainWindowViewModel =
 
         member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory)
         member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory)
-        member this.IsDestinationDirectoryValid = this.BindModel((fun m -> m.DestinationDirectory.PathExists), nameof this.IsDestinationDirectoryValid)
+        member this.IsDestinationDirectoryValid = this.BindModel(nameof this.IsDestinationDirectoryValid, fun m -> m.DestinationDirectory.PathExists)
         member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
         member this.FileTypes 
             with get () = this.BindModel(fun m -> m.FileTypes)
             and set value = this.Dispatch(UpdateFileTypes value)
         
-        member this.CanActivate = this.BindModel((fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists), nameof this.CanActivate)
+        member this.CanActivate = this.BindModel(nameof this.CanActivate, fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
         member this.IsActive 
             with get () = this.BindModel(fun m -> m.IsActive)
             and set value = this.Dispatch(ChangeActive value)
@@ -159,6 +159,6 @@ module MainWindowViewModel =
             |> Program.withSubscription (subscriptions watcher)
             |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
             |> Program.withConsoleTrace
-            |> this.RunProgram view
+            |> Program.runView this view
 
     

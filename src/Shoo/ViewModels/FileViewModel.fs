@@ -75,4 +75,4 @@ module FileViewModel =
             Program.mkAvaloniaSimple (init path) update
             |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
             |> Program.withConsoleTrace
-            |> this.RunProgram view
+            |> Program.runView this view
