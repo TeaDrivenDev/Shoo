@@ -3,6 +3,7 @@
 open System
 open System.Collections.ObjectModel
 open System.IO
+open System.Reactive.Disposables
 
 open FSharp.Control.Reactive
 
@@ -12,7 +13,14 @@ open Elmish.Avalonia
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
+type Subject<'T> = System.Reactive.Subjects.Subject<'T>
+
 module MainWindowViewModel =
+    [<Literal>]
+    let shooFileNameExtension = ".__shoo__"
+
+    let bufferSize = 1024 * 1024
+
     type File = { Name: string }
 
     type Model =
@@ -34,6 +42,7 @@ module MainWindowViewModel =
         | ChangeActive of bool
         | Terminate
         | AddFile of string
+        | UpdateFileStatus of (FileViewModel * int * MoveFileStatus)
         // TODO Temporary
         | RemoveFile
 
@@ -46,9 +55,18 @@ module MainWindowViewModel =
             IsActive = false
             Files = ObservableCollection()
         }
-        |> asFst (Cmd.ofMsg (AddFile @"C:\hiberfil.sys"))
+        |> withoutCommand
 
-    let update tryPickFolder message model =
+    let copy reportProgress onDownloadComplete destinationDirectory (source: string) =
+        let destinationFileName = Path.GetFileNameWithoutExtension source
+        let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
+
+        File.Copy(source, destination)
+
+        reportProgress 100
+        onDownloadComplete Complete
+
+    let update tryPickFolder (fileViewModels: Subject<FileViewModel>) message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -81,6 +99,12 @@ module MainWindowViewModel =
             let vm = FileViewModel path
 
             model.Files.Add(vm)
+            fileViewModels.OnNext vm
+            model |> withoutCommand
+        | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
+            fileViewModel.MoveProgress <- progress
+            fileViewModel.MoveStatus <- moveFileStatus
+
             model |> withoutCommand
         // TODO Temporary
         | RemoveFile ->
@@ -112,7 +136,11 @@ module MainWindowViewModel =
 
         ViewModel.designInstance model (bindings ())
 
-    let subscriptions (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
+    let subscriptions
+        (watcher: FileSystemWatcher)
+        (fileViewModels: Subject<FileViewModel>)
+        (model: Model)
+        : Sub<Message> =
         let watchFileSystem dispatch =
             let subscription =
                 watcher.Renamed
@@ -128,8 +156,26 @@ module MainWindowViewModel =
                         subscription.Dispose()
             }
 
+        let copyFile dispatch =
+            let subscription =
+                fileViewModels
+                |> Observable.subscribe
+                    (fun file ->
+                        copy
+                            (fun progress -> UpdateFileStatus (file, progress, Moving) |> dispatch)
+                            (fun moveStatus -> UpdateFileStatus (file, 100, Complete) |> dispatch)
+                            model.DestinationDirectory.Path
+                            file.FullName)
+
+            subscription
+
         [
-            if model.IsActive then [ nameof watchFileSystem ], watchFileSystem
+            if model.IsActive then
+                yield!
+                    [
+                        [ nameof watchFileSystem ], watchFileSystem
+                        [ nameof copyFile ], copyFile
+                    ]
         ]
 
     let vm () =
@@ -138,9 +184,14 @@ module MainWindowViewModel =
             fileProvider.TryPickFolder()
 
         let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+        let fileViewModels = new System.Reactive.Subjects.Subject<FileViewModel>()
 
-        AvaloniaProgram.mkProgram init (update tryPickFolder) bindings
-        |> AvaloniaProgram.withSubscription (subscriptions watcher)
+        let compositeDisposable = new CompositeDisposable()
+        compositeDisposable.Add watcher
+        compositeDisposable.Add fileViewModels
+
+        AvaloniaProgram.mkProgram init (update tryPickFolder fileViewModels) bindings
+        |> AvaloniaProgram.withSubscription (subscriptions watcher fileViewModels)
         |> ElmishViewModel.create
         |> ElmishViewModel.terminateOnViewUnloaded Terminate
         :> IElmishViewModel

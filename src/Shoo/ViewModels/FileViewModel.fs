@@ -19,6 +19,7 @@ type FileViewModel(path) =
     let fileSize = fileInfo.Length
     let time = fileInfo.LastWriteTime
 
+    member _.FullName = fullName
     member _.FileName = fileName
     member _.FileSize = fileSize
     member _.Time = time
