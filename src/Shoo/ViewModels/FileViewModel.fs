@@ -64,7 +64,7 @@ module FileViewModel =
 
 
     type FileViewModel(path: string) = 
-        inherit ReactiveElmishViewModel<Model, Message>(init "" ())
+        inherit ReactiveElmishViewModel<Model, Message>(init path ())
 
         member this.FileName = this.BindModel(fun m -> m.FileName)
         member this.Time = this.BindModel(fun m -> m.Time)

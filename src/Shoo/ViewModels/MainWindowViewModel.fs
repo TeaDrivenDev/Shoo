@@ -36,9 +36,9 @@ module MainWindowViewModel =
 
     let init () =
         {
-            SourceDirectory = ConfiguredDirectory.Empty
-            DestinationDirectory = ConfiguredDirectory.Empty
-            FileTypes = ""
+            SourceDirectory = createConfiguredDirectory @"C:\Users\jmarr\AppData\Local\Temp\Shoo\A"
+            DestinationDirectory = createConfiguredDirectory @"C:\Users\jmarr\AppData\Local\Temp\Shoo\B"
+            FileTypes = "*.png"
             ReplacementsFileName = ""
             IsActive = false
             Files = ObservableCollection()
