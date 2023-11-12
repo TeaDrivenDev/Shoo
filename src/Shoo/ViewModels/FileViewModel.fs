@@ -41,7 +41,7 @@ module FileViewModel =
             MoveStatus = Waiting
         }
 
-    let bindings () =
+    let bindings : Binding<Model, Message> list =
         [
             "FileName" |> Binding.oneWay (fun m -> m.FileName)
             "Time" |> Binding.oneWay (fun m -> m.Time)
@@ -60,7 +60,7 @@ module FileViewModel =
                 MoveStatus = Moving
             }
 
-        ViewModel.designInstance model (bindings ())
+        ViewModel.designInstance model bindings
 
 
     type FileViewModel(path: string) = 
