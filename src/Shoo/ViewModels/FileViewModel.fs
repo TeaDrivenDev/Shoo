@@ -41,28 +41,6 @@ module FileViewModel =
             MoveStatus = Waiting
         }
 
-    let bindings : Binding<Model, Message> list =
-        [
-            "FileName" |> Binding.oneWay (fun m -> m.FileName)
-            "Time" |> Binding.oneWay (fun m -> m.Time)
-            "Size" |> Binding.oneWay (fun m -> m.Size)
-            "MoveProgress" |> Binding.oneWay (fun m -> m.MoveProgress)
-        ]
-
-    let designVM =
-        let model =
-            {
-                FullName = "AA"
-                FileName = "AAA"
-                Time = DateTime.Now
-                Size = 1234567890L
-                MoveProgress = 37
-                MoveStatus = Moving
-            }
-
-        ViewModel.designInstance model bindings
-
-
     type FileViewModel(path: string) = 
         inherit ReactiveElmishViewModel<Model, Message>(init path ())
 
@@ -76,3 +54,6 @@ module FileViewModel =
             |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
             |> Program.withConsoleTrace
             |> Program.runView this view
+
+    
+    let designVM = new FileViewModel(@"c:/path/file.txt")

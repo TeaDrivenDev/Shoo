@@ -85,28 +85,6 @@ module MainWindowViewModel =
 
             model |> withoutCommand
 
-    let bindings =
-        [
-            "SourceDirectory" |> Binding.twoWay((fun m -> m.SourceDirectory.Path), Some >> UpdateSourceDirectory)
-            "DestinationDirectory" |> Binding.twoWay((fun m -> m.DestinationDirectory.Path), Some >> UpdateDestinationDirectory)
-            "IsSourceDirectoryValid" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists)
-            "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.DestinationDirectory.PathExists)
-            "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
-            "CanActivate" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
-            "IsActive" |> Binding.twoWay((fun m -> m.IsActive), ChangeActive)
-            "Files" |> Binding.oneWay(fun m -> m.Files)
-
-            //"SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
-            //"SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
-            //// TODO Temporary
-            //"RemoveFile" |> Binding.cmd RemoveFile
-        ]
-
-    let designVM =
-        let model, _ = init ()
-        model.Files.Add(FileViewModel.designVM)
-        ViewModel.designInstance model bindings
-
     let subscriptions (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
         let watchFileSystem dispatch =
             let subscription =
@@ -161,4 +139,4 @@ module MainWindowViewModel =
             |> Program.withConsoleTrace
             |> Program.runView this view
 
-    
+    let designVM = new MainWindowViewModel()

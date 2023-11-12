@@ -14,7 +14,6 @@ module Program =
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace(areas = Array.empty)
-            .UseElmishBindings()
             .UseReactiveUI()
 
     [<EntryPoint; STAThread>]
