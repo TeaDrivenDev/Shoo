@@ -85,7 +85,7 @@ module MainWindowViewModel =
 
             model |> withoutCommand
 
-    let subscriptions (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
+    let subscriptions (view: Avalonia.Controls.Control) (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
         let watchFileSystem dispatch =
             let subscription =
                 watcher.Renamed
@@ -101,18 +101,23 @@ module MainWindowViewModel =
                         subscription.Dispose()
             }
 
+        let viewUnloadedSub (dispatch: Message -> unit) = 
+            view.Unloaded |> Observable.subscribe(fun _ -> dispatch Terminate)
+
+
         [
             if model.IsActive then [ nameof watchFileSystem ], watchFileSystem
+            [ nameof viewUnloadedSub ], viewUnloadedSub
         ]
-
-    let tryPickFolder () =
-        let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
-        fileProvider.TryPickFolder()
-
-    let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
 
     type MainWindowViewModel() = 
         inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
+
+        let tryPickFolder () =
+            let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
+            fileProvider.TryPickFolder()
+
+        let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
 
         member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory)
         member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory)
@@ -134,7 +139,8 @@ module MainWindowViewModel =
 
         override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
             Program.mkAvaloniaProgram init (update tryPickFolder)
-            |> Program.withSubscription (subscriptions watcher)
+            |> Program.withSubscription (subscriptions view watcher)
+            |> Program.withTermination (fun msg -> msg = Terminate) (fun model -> printfn "View unloaded; terminating loop.")
             |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
             |> Program.withConsoleTrace
             |> Program.runView this view
