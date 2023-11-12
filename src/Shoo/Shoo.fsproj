@@ -28,12 +28,20 @@
     <PackageReference Include="Avalonia" Version="11.0.5" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.0.5" />
     <PackageReference Include="Avalonia.Desktop" Version="11.0.5" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.5" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.5" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.5" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.5" />
-    <PackageReference Include="Elmish.Avalonia" Version="1.1.0" />
+    <PackageReference Include="Elmish" Version="4.1.0" />
     <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Elmish.Avalonia">
+      <HintPath>..\..\..\Elmish.Avalonia\src\Elmish.Avalonia\bin\Debug\net6.0\Elmish.Avalonia.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

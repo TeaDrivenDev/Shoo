@@ -3,12 +3,9 @@
 open System
 open System.Collections.ObjectModel
 open System.IO
-
 open FSharp.Control.Reactive
-
 open Elmish
 open Elmish.Avalonia
-
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
@@ -89,28 +86,27 @@ module MainWindowViewModel =
 
             model |> withoutCommand
 
-    let bindings () =
+    let bindings =
         [
             "SourceDirectory" |> Binding.twoWay((fun m -> m.SourceDirectory.Path), Some >> UpdateSourceDirectory)
             "DestinationDirectory" |> Binding.twoWay((fun m -> m.DestinationDirectory.Path), Some >> UpdateDestinationDirectory)
             "IsSourceDirectoryValid" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists)
             "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.DestinationDirectory.PathExists)
-            "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
-            "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
             "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
             "CanActivate" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
             "IsActive" |> Binding.twoWay((fun m -> m.IsActive), ChangeActive)
             "Files" |> Binding.oneWay(fun m -> m.Files)
 
-            // TODO Temporary
-            "RemoveFile" |> Binding.cmd RemoveFile
+            //"SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
+            //"SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
+            //// TODO Temporary
+            //"RemoveFile" |> Binding.cmd RemoveFile
         ]
 
     let designVM =
         let model, _ = init ()
         model.Files.Add(FileViewModel.designVM)
-
-        ViewModel.designInstance model (bindings ())
+        ViewModel.designInstance model bindings
 
     let subscriptions (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
         let watchFileSystem dispatch =
@@ -132,15 +128,35 @@ module MainWindowViewModel =
             if model.IsActive then [ nameof watchFileSystem ], watchFileSystem
         ]
 
-    let vm () =
-        let tryPickFolder () =
-            let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
-            fileProvider.TryPickFolder()
+    let tryPickFolder () =
+        let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
+        fileProvider.TryPickFolder()
 
-        let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+    let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
 
-        AvaloniaProgram.mkProgram init (update tryPickFolder) bindings
-        |> AvaloniaProgram.withSubscription (subscriptions watcher)
-        |> ElmishViewModel.create
-        |> ElmishViewModel.terminateOnViewUnloaded Terminate
-        :> IElmishViewModel
+    type MainWindowViewModel() = 
+        inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
+
+        member this.SourceDirectory = this.BindValue(fun m -> m.SourceDirectory)
+        member this.DestinationDirectory = this.BindValue(fun m -> m.DestinationDirectory)
+        member this.IsDestinationDirectoryValid = this.BindValue((fun m -> m.DestinationDirectory.PathExists), nameof this.IsDestinationDirectoryValid)
+        member this.ReplacementsFileName = this.BindValue(fun m -> m.ReplacementsFileName)
+        member this.FileTypes 
+            with get () = this.BindValue(fun m -> m.FileTypes)
+            and set value = this.Dispatch(UpdateFileTypes value)
+        
+        member this.CanActivate = this.BindValue((fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists), nameof this.CanActivate)
+        member this.IsActive 
+            with get () = this.BindValue(fun m -> m.IsActive)
+            and set value = this.Dispatch(ChangeActive value)
+        
+        member this.Files = this.BindValue(fun m -> m.Files)
+
+        override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
+            Program.mkAvaloniaProgram init (update tryPickFolder)
+            |> Program.withSubscription (subscriptions watcher)
+            |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+            |> Program.withConsoleTrace
+            |> this.RunProgram view
+
+    let vm() = new MainWindowViewModel()
