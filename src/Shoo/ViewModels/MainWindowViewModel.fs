@@ -120,8 +120,8 @@ type MainWindowViewModel() =
 
     let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
 
-    member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory.Path)
-    member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory.Path)
+    member this.SourceDirectory = this.BindModel(nameof this.SourceDirectory, fun m -> m.SourceDirectory.Path)
+    member this.DestinationDirectory = this.BindModel(nameof this.DestinationDirectory, fun m -> m.DestinationDirectory.Path)
     member this.IsSourceDirectoryValid = this.BindModel(nameof this.IsSourceDirectoryValid, fun m -> m.SourceDirectory.PathExists)
     member this.IsDestinationDirectoryValid = this.BindModel(nameof this.IsDestinationDirectoryValid, fun m -> m.DestinationDirectory.PathExists)
     member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
