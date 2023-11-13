@@ -85,7 +85,7 @@ module MainWindowViewModel =
 
             model |> withoutCommand
 
-    let subscriptions (view: Avalonia.Controls.Control) (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
+    let subscriptions (watcher: FileSystemWatcher) (model: Model) : Sub<Message> =
         let watchFileSystem dispatch =
             let subscription =
                 watcher.Renamed
@@ -101,13 +101,8 @@ module MainWindowViewModel =
                         subscription.Dispose()
             }
 
-        let viewUnloadedSub (dispatch: Message -> unit) = 
-            view.Unloaded |> Observable.subscribe(fun _ -> dispatch Terminate)
-
-
         [
             if model.IsActive then [ nameof watchFileSystem ], watchFileSystem
-            [ nameof viewUnloadedSub ], viewUnloadedSub
         ]
 
     type MainWindowViewModel() = 
@@ -139,8 +134,8 @@ module MainWindowViewModel =
 
         override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
             Program.mkAvaloniaProgram init (update tryPickFolder)
-            |> Program.withSubscription (subscriptions view watcher)
-            |> Program.withTermination (fun msg -> msg = Terminate) (fun model -> printfn "View unloaded; terminating loop.")
+            |> Program.withSubscription (subscriptions watcher)
+            |> Program.terminateOnViewUnloaded this Terminate
             |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
             |> Program.withConsoleTrace
             |> Program.runView this view
