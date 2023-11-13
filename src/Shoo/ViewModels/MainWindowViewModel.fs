@@ -36,8 +36,12 @@ module MainWindow =
 
     let init () =
         {
-            SourceDirectory = createConfiguredDirectory @"C:\Users\jmarr\AppData\Local\Temp\Shoo\A"
-            DestinationDirectory = createConfiguredDirectory @"C:\Users\jmarr\AppData\Local\Temp\Shoo\B"
+            #if DEBUG
+            SourceDirectory = createConfiguredDirectory __SOURCE_DIRECTORY__
+            #else
+            SourceDirectory = ConfiguredDirectory.Empty
+            #endif
+            DestinationDirectory = ConfiguredDirectory.Empty
             FileTypes = "*.png"
             ReplacementsFileName = ""
             IsActive = false
@@ -116,8 +120,8 @@ type MainWindowViewModel() =
 
     let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
 
-    member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory)
-    member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory)
+    member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory.Path)
+    member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory.Path)
     member this.IsSourceDirectoryValid = this.BindModel(nameof this.IsSourceDirectoryValid, fun m -> m.SourceDirectory.PathExists)
     member this.IsDestinationDirectoryValid = this.BindModel(nameof this.IsDestinationDirectoryValid, fun m -> m.DestinationDirectory.PathExists)
     member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
