@@ -8,7 +8,8 @@
         Title="Shoo"
         d:DesignHeight="450"
         d:DesignWidth="800"
-        Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.designVM}}"
+        Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.DesignVM}}"
+		x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         mc:Ignorable="d">
   <Window.Styles>

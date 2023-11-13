@@ -9,7 +9,7 @@ open Elmish.Avalonia
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
-module MainWindowViewModel =
+module MainWindow =
     type File = { Name: string }
 
     type Model =
@@ -19,7 +19,7 @@ module MainWindowViewModel =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            Files: ObservableCollection<obj>
+            Files: ObservableCollection<FileViewModel>
         }
 
     type Message =
@@ -75,7 +75,7 @@ module MainWindowViewModel =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | AddFile path ->
-            let vm = new FileViewModel.FileViewModel(path)
+            let vm = new FileViewModel(path)
             model.Files.Add(vm)
             model |> withoutCommand
         // TODO Temporary
@@ -105,39 +105,42 @@ module MainWindowViewModel =
             if model.IsActive then [ nameof watchFileSystem ], watchFileSystem
         ]
 
-    type MainWindowViewModel() = 
-        inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
+open MainWindow
 
-        let tryPickFolder () =
-            let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
-            fileProvider.TryPickFolder()
+type MainWindowViewModel() = 
+    inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
 
-        let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+    let tryPickFolder () =
+        let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
+        fileProvider.TryPickFolder()
 
-        member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory)
-        member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory)
-        member this.IsDestinationDirectoryValid = this.BindModel(nameof this.IsDestinationDirectoryValid, fun m -> m.DestinationDirectory.PathExists)
-        member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
-        member this.FileTypes 
-            with get () = this.BindModel(fun m -> m.FileTypes)
-            and set value = this.Dispatch(UpdateFileTypes value)
+    let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+
+    member this.SourceDirectory = this.BindModel(fun m -> m.SourceDirectory)
+    member this.DestinationDirectory = this.BindModel(fun m -> m.DestinationDirectory)
+    member this.IsSourceDirectoryValid = this.BindModel(nameof this.IsSourceDirectoryValid, fun m -> m.SourceDirectory.PathExists)
+    member this.IsDestinationDirectoryValid = this.BindModel(nameof this.IsDestinationDirectoryValid, fun m -> m.DestinationDirectory.PathExists)
+    member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
+    member this.FileTypes 
+        with get () = this.BindModel(fun m -> m.FileTypes)
+        and set value = this.Dispatch(UpdateFileTypes value)
         
-        member this.CanActivate = this.BindModel(nameof this.CanActivate, fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
-        member this.IsActive 
-            with get () = this.BindModel(fun m -> m.IsActive)
-            and set value = this.Dispatch(ChangeActive value)
+    member this.CanActivate = this.BindModel(nameof this.CanActivate, fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
+    member this.IsActive 
+        with get () = this.BindModel(fun m -> m.IsActive)
+        and set value = this.Dispatch(ChangeActive value)
         
-        member this.Files = this.BindModel(fun m -> m.Files)
+    member this.Files = this.BindModel(fun m -> m.Files)
 
-        member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
-        member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
+    member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
+    member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
 
-        override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
-            Program.mkAvaloniaProgram init (update tryPickFolder)
-            |> Program.withSubscription (subscriptions watcher)
-            |> Program.terminateOnViewUnloaded this Terminate
-            |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
-            |> Program.withConsoleTrace
-            |> Program.runView this view
+    override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
+        Program.mkAvaloniaProgram init (update tryPickFolder)
+        |> Program.withSubscription (subscriptions watcher)
+        |> Program.terminateOnViewUnloaded this Terminate
+        |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+        |> Program.withConsoleTrace
+        |> Program.runView this view
 
-    let designVM = new MainWindowViewModel()
+    static member DesignVM = new MainWindowViewModel()
