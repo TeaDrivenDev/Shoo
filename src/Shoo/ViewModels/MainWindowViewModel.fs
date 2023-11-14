@@ -119,22 +119,24 @@ type MainWindowViewModel() =
         fileProvider.TryPickFolder()
 
     let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+    let mutable fileTypes = ""
 
     member this.SourceDirectory = this.BindModel(nameof this.SourceDirectory, fun m -> m.SourceDirectory.Path)
     member this.DestinationDirectory = this.BindModel(nameof this.DestinationDirectory, fun m -> m.DestinationDirectory.Path)
     member this.IsSourceDirectoryValid = this.BindModel(nameof this.IsSourceDirectoryValid, fun m -> m.SourceDirectory.PathExists)
     member this.IsDestinationDirectoryValid = this.BindModel(nameof this.IsDestinationDirectoryValid, fun m -> m.DestinationDirectory.PathExists)
-    member this.ReplacementsFileName = this.BindModel(fun m -> m.ReplacementsFileName)
+    member this.ReplacementsFileName = this.BindModel(nameof this.ReplacementsFileName, fun m -> m.ReplacementsFileName)
     member this.FileTypes 
-        with get () = this.BindModel(fun m -> m.FileTypes)
+        with get () = this.BindModel(nameof this.FileTypes, fun m -> m.FileTypes)
         and set value = this.Dispatch(UpdateFileTypes value)
         
     member this.CanActivate = this.BindModel(nameof this.CanActivate, fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
+
     member this.IsActive 
-        with get () = this.BindModel(fun m -> m.IsActive)
+        with get () = this.BindModel(nameof this.IsActive, fun m -> m.IsActive)
         and set value = this.Dispatch(ChangeActive value)
         
-    member this.Files = this.BindModel(fun m -> m.Files)
+    member this.Files = this.BindModel(nameof this.Files, fun m -> m.Files)
 
     member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
     member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
