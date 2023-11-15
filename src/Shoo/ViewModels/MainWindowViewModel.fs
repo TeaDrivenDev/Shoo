@@ -19,6 +19,7 @@ module MainWindowViewModel =
     [<Literal>]
     let shooFileNameExtension = ".__shoo__"
 
+    [<Literal>]
     let bufferSize = 1024 * 1024
 
     type CreateMode = Create | Replace
@@ -174,16 +175,16 @@ module MainWindowViewModel =
 
     let bindings () =
         [
-            "SourceDirectory" |> Binding.twoWay((fun m -> m.SourceDirectory.Path), Some >> UpdateSourceDirectory)
-            "DestinationDirectory" |> Binding.twoWay((fun m -> m.DestinationDirectory.Path), Some >> UpdateDestinationDirectory)
-            "IsSourceDirectoryValid" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists)
-            "IsDestinationDirectoryValid" |> Binding.oneWay(fun m -> m.DestinationDirectory.PathExists)
+            "SourceDirectory" |> Binding.twoWay(_.SourceDirectory.Path, Some >> UpdateSourceDirectory)
+            "DestinationDirectory" |> Binding.twoWay(_.DestinationDirectory.Path, Some >> UpdateDestinationDirectory)
+            "IsSourceDirectoryValid" |> Binding.oneWay(_.SourceDirectory.PathExists)
+            "IsDestinationDirectoryValid" |> Binding.oneWay(_.DestinationDirectory.PathExists)
             "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
             "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
-            "FileTypes" |> Binding.twoWay((fun m -> m.FileTypes), UpdateFileTypes)
+            "FileTypes" |> Binding.twoWay(_.FileTypes, UpdateFileTypes)
             "CanActivate" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
-            "IsActive" |> Binding.twoWay((fun m -> m.IsActive), ChangeActive)
-            "Files" |> Binding.oneWay(fun m -> m.Files)
+            "IsActive" |> Binding.twoWay(_.IsActive, ChangeActive)
+            "Files" |> Binding.oneWay(_.Files)
 
             // TODO Temporary
             "RemoveFile" |> Binding.cmd RemoveFile
@@ -203,7 +204,7 @@ module MainWindowViewModel =
         let watchFileSystem dispatch =
             let subscription =
                 watcher.Renamed
-                |> Observable.subscribe (fun e -> e.FullPath |> AddFile |> dispatch)
+                |> Observable.subscribe (_.FullPath >> AddFile >> dispatch)
 
             watcher.Path <- model.SourceDirectory.Path
             watcher.EnableRaisingEvents <- true
@@ -218,8 +219,7 @@ module MainWindowViewModel =
         let copyFile dispatch =
             let subscription =
                 copyOperations
-                |> Observable.subscribe
-                    (moveFile2 >> UpdateFileStatus >> dispatch)
+                |> Observable.subscribe (moveFile2 >> UpdateFileStatus >> dispatch)
 
             subscription
 
