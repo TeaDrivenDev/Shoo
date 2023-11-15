@@ -35,7 +35,7 @@
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.5" />
     <PackageReference Include="Elmish.Avalonia" Version="1.1.0" />
     <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="ReactiveUI" Version="18.4.44" />
   </ItemGroup>
 </Project>
