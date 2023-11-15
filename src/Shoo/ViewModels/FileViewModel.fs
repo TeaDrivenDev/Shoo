@@ -46,10 +46,10 @@ open File
 type FileViewModel(path: string) = 
     inherit ReactiveElmishViewModel<Model, Message>(init path ())
 
-    member this.FileName = this.BindModel(nameof this.FileName, fun m -> m.FileName)
-    member this.Time = this.BindModel(nameof this.Time, fun m -> m.Time)
-    member this.Size = this.BindModel(nameof this.Size, fun m -> m.Size)
-    member this.MoveProgress = this.BindModel(nameof this.MoveProgress, fun m -> m.MoveProgress)
+    member this.FileName = this.Bind _.FileName
+    member this.Time = this.Bind _.Time
+    member this.Size = this.Bind _.Size
+    member this.MoveProgress = this.Bind _.MoveProgress
         
     override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
         Program.mkAvaloniaSimple (init path) update
