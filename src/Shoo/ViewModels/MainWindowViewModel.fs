@@ -21,7 +21,15 @@ module MainWindowViewModel =
 
     let bufferSize = 1024 * 1024
 
-    type File = { Name: string }
+    type CreateMode = Create | Replace
+
+    type CopyOperation =
+        {
+            Source: string
+            Destination: string
+            Extension: string
+            FileViewModel: FileViewModel
+        }
 
     type Model =
         {
@@ -57,16 +65,66 @@ module MainWindowViewModel =
         }
         |> withoutCommand
 
-    let copy reportProgress onDownloadComplete destinationDirectory (source: string) =
+    let getSafeDestinationFileName (filePath: string) extension =
+        let directory = Path.GetDirectoryName filePath
+        let fileName = Path.GetFileNameWithoutExtension filePath
+
+        let rec getFileName count =
+            let name =
+                match count with
+                | 1 -> fileName + extension
+                | _ -> sprintf "%s (%i)%s" fileName count extension
+                |> asSnd directory
+                |> Path.Combine
+
+            let file = FileInfo name
+
+            if file.Exists
+            then
+                if file.Length = 0L
+                then name, Replace
+                else getFileName (count + 1)
+            else name, Create
+
+        getFileName 1
+
+    let moveFile startCopyOperation (fileViewModel: FileViewModel) destinationDirectory =
+        let source = fileViewModel.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
         let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
 
-        File.Copy(source, destination)
+        {
+            Source = source
+            Destination = destination
+            Extension = Path.GetExtension source
+            FileViewModel = fileViewModel
+        }
+        |> startCopyOperation
 
-        reportProgress 100
-        onDownloadComplete Complete
+    let moveFile2 copyOperation =
+        File.Copy(copyOperation.Source, copyOperation.Destination)
 
-    let update tryPickFolder (fileViewModels: Subject<FileViewModel>) message model =
+        let time = (FileInfo copyOperation.Source).LastWriteTimeUtc
+
+        File.SetLastWriteTimeUtc(copyOperation.Destination, time)
+        let finalDestination, createMode =
+            getSafeDestinationFileName copyOperation.Destination copyOperation.Extension
+
+        if createMode = Replace
+        then File.Delete finalDestination
+
+        File.Move(copyOperation.Destination, finalDestination)
+
+        let moveStatus =
+            if FileInfo(finalDestination).Length > 0L
+            then
+                File.Delete copyOperation.Source
+                Complete
+            else Failed
+
+        copyOperation.FileViewModel, 100, moveStatus
+
+    let update tryPickFolder (fileViewModels: Subject<CopyOperation>) message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -99,7 +157,8 @@ module MainWindowViewModel =
             let vm = FileViewModel path
 
             model.Files.Add(vm)
-            fileViewModels.OnNext vm
+            moveFile fileViewModels.OnNext vm model.DestinationDirectory.Path
+
             model |> withoutCommand
         | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
             fileViewModel.MoveProgress <- progress
@@ -138,7 +197,7 @@ module MainWindowViewModel =
 
     let subscriptions
         (watcher: FileSystemWatcher)
-        (fileViewModels: Subject<FileViewModel>)
+        (copyOperations: Subject<CopyOperation>)
         (model: Model)
         : Sub<Message> =
         let watchFileSystem dispatch =
@@ -158,14 +217,9 @@ module MainWindowViewModel =
 
         let copyFile dispatch =
             let subscription =
-                fileViewModels
+                copyOperations
                 |> Observable.subscribe
-                    (fun file ->
-                        copy
-                            (fun progress -> UpdateFileStatus (file, progress, Moving) |> dispatch)
-                            (fun moveStatus -> UpdateFileStatus (file, 100, Complete) |> dispatch)
-                            model.DestinationDirectory.Path
-                            file.FullName)
+                    (moveFile2 >> UpdateFileStatus >> dispatch)
 
             subscription
 
@@ -184,7 +238,7 @@ module MainWindowViewModel =
             fileProvider.TryPickFolder()
 
         let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-        let fileViewModels = new System.Reactive.Subjects.Subject<FileViewModel>()
+        let fileViewModels = new System.Reactive.Subjects.Subject<CopyOperation>()
 
         let compositeDisposable = new CompositeDisposable()
         compositeDisposable.Add watcher
