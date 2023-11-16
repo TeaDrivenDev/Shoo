@@ -15,7 +15,7 @@ open TeaDrivenDev.Prelude.IO
 
 type Subject<'T> = System.Reactive.Subjects.Subject<'T>
 
-module MainWindowViewModel =
+module MainWindow =
     [<Literal>]
     let shooFileNameExtension = ".__shoo__"
 
@@ -57,7 +57,11 @@ module MainWindowViewModel =
 
     let init () =
         {
-            SourceDirectory = ConfiguredDirectory.Empty
+            SourceDirectory =
+                Path.Combine(
+                    Environment.GetFolderPath Environment.SpecialFolder.UserProfile,
+                    "Downloads")
+                |> createConfiguredDirectory
             DestinationDirectory = ConfiguredDirectory.Empty
             FileTypes = ""
             ReplacementsFileName = ""
@@ -155,7 +159,8 @@ module MainWindowViewModel =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | AddFile path ->
-            let vm = FileViewModel path
+            let vm = new FileViewModel(path)
+            // vm.StartElmishLoop null
 
             model.Files.Add(vm)
             moveFile fileViewModels.OnNext vm model.DestinationDirectory.Path
@@ -172,40 +177,6 @@ module MainWindowViewModel =
             then model.Files.RemoveAt 0
 
             model |> withoutCommand
-
-    let bindings () =
-        [
-            "SourceDirectory" |> Binding.twoWay(_.SourceDirectory.Path, Some >> UpdateSourceDirectory)
-            "DestinationDirectory" |> Binding.twoWay(_.DestinationDirectory.Path, Some >> UpdateDestinationDirectory)
-            "IsSourceDirectoryValid" |> Binding.oneWay(_.SourceDirectory.PathExists)
-            "IsDestinationDirectoryValid" |> Binding.oneWay(_.DestinationDirectory.PathExists)
-            "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
-            "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
-            "FileTypes" |> Binding.twoWay(_.FileTypes, UpdateFileTypes)
-
-            "CanActivate"
-            |> Binding.oneWay
-                (fun m ->
-                    m.SourceDirectory.PathExists
-                    && m.DestinationDirectory.PathExists
-                    && m.SourceDirectory.Path <> m.DestinationDirectory.Path)
-
-            "IsActive" |> Binding.twoWay(_.IsActive, ChangeActive)
-            "Files" |> Binding.oneWay(_.Files)
-
-            // TODO Temporary
-            "RemoveFile" |> Binding.cmd RemoveFile
-        ]
-
-    let designVM =
-        let model, _ = init ()
-
-        let fileViewModel = FileViewModel @"c:\hiberfil.sys"
-        fileViewModel.MoveProgress <- 12
-        fileViewModel.MoveStatus <- Complete
-        model.Files.Add(fileViewModel)
-
-        ViewModel.designInstance model (bindings ())
 
     let subscriptions
         (watcher: FileSystemWatcher)
@@ -243,20 +214,56 @@ module MainWindowViewModel =
                     ]
         ]
 
-    let vm () =
-        let tryPickFolder () =
-            let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
-            fileProvider.TryPickFolder()
+open MainWindow
 
-        let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-        let fileViewModels = new System.Reactive.Subjects.Subject<CopyOperation>()
+type MainWindowViewModel() =
+    inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
 
-        let compositeDisposable = new CompositeDisposable()
+    let tryPickFolder () =
+        let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
+        fileProvider.TryPickFolder()
+
+    let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
+    let copyOperations = new System.Reactive.Subjects.Subject<CopyOperation>()
+
+    let compositeDisposable = new CompositeDisposable()
+
+    do
         compositeDisposable.Add watcher
-        compositeDisposable.Add fileViewModels
+        compositeDisposable.Add copyOperations
 
-        AvaloniaProgram.mkProgram init (update tryPickFolder fileViewModels) bindings
-        |> AvaloniaProgram.withSubscription (subscriptions watcher fileViewModels)
-        |> ElmishViewModel.create
-        |> ElmishViewModel.terminateOnViewUnloaded Terminate
-        :> IElmishViewModel
+    member this.SourceDirectory = this.Bind _.SourceDirectory.Path
+    member this.DestinationDirectory = this.Bind _.DestinationDirectory.Path
+    member this.IsSourceDirectoryValid = this.Bind _.SourceDirectory.PathExists
+    member this.IsDestinationDirectoryValid = this.Bind _.DestinationDirectory.PathExists
+    member this.ReplacementsFileName = this.Bind _.ReplacementsFileName
+    member this.FileTypes
+        with get () = this.Bind _.FileTypes
+        and set value = this.Dispatch(UpdateFileTypes value)
+
+    member this.CanActivate =
+        this.Bind (
+            fun m ->
+                m.SourceDirectory.PathExists
+                && m.DestinationDirectory.PathExists
+                && m.DestinationDirectory.Path <> m.SourceDirectory.Path)
+
+    member this.IsActive
+        with get () = this.Bind _.IsActive
+        and set value = this.Dispatch(ChangeActive value)
+
+    member this.Files = this.Bind _.Files
+
+    member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
+    member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
+
+    override this.StartElmishLoop(view: Avalonia.Controls.Control) =
+        Program.mkAvaloniaProgram init (update tryPickFolder copyOperations)
+        |> Program.withSubscription (subscriptions watcher copyOperations)
+        |> Program.terminateOnViewUnloaded this Terminate
+        |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+        |> Program.withConsoleTrace
+        |> Program.runView this view
+
+    static member DesignVM =
+        new MainWindowViewModel()

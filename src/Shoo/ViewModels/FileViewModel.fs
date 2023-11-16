@@ -1,35 +1,67 @@
 ﻿namespace Shoo.ViewModels
 
+open System
 open System.IO
 
-open ReactiveUI
+open Elmish
+open Elmish.Avalonia
 
 type MoveFileStatus = Waiting | Moving | Complete | Failed
 
-type FileViewModel(path) =
-    inherit ReactiveViewModelBase()
+module File =
+    type Model =
+        {
+            FullName: string
+            FileName: string
+            Time: DateTime
+            FileSize: int64
+            MoveProgress: int
+            MoveStatus: MoveFileStatus
+        }
 
-    let mutable moveProgress = 0
-    let mutable moveStatus = Waiting
+    type Message =
+        | UpdateProgress of int
+        | UpdateStatus of MoveFileStatus
 
-    let fileInfo = FileInfo path
+    let update message model =
+        match message with
+        | UpdateProgress progress -> { model with MoveProgress = progress }
+        | UpdateStatus status -> { model with MoveStatus = status }
 
-    let fullName = fileInfo.FullName
-    let fileName = fileInfo.Name
-    let fileSize = fileInfo.Length
-    let time = fileInfo.LastWriteTime
+    let init path () =
+        let fileInfo = FileInfo path
 
-    member _.FullName = fullName
-    member _.FileName = fileName
-    member _.FileSize = fileSize
-    member _.Time = time
+        {
+            FullName = fileInfo.FullName
+            FileName = fileInfo.Name
+            Time = fileInfo.LastWriteTime
+            FileSize = fileInfo.Length
+            MoveProgress = 0
+            MoveStatus = Waiting
+        }
+
+open File
+
+type FileViewModel(path: string) =
+    inherit ReactiveElmishViewModel<Model, Message>(init path ())
+
+    member this.FullName = this.Bind _.FullName
+    member this.FileName = this.Bind _.FileName
+    member this.Time = this.Bind _.Time
+    member this.FileSize = this.Bind _.FileSize
 
     member this.MoveProgress
-        with get () = moveProgress
-        and set value =
-            this.RaiseAndSetIfChanged(&moveProgress,  value) |> ignore
+        with get () = this.Bind _.MoveProgress
+        and set value = this.Dispatch (UpdateProgress value)
 
     member this.MoveStatus
-        with get () = moveStatus
-        and set value =
-            this.RaiseAndSetIfChanged(&moveStatus, value) |> ignore
+        with get () = this.Bind _.MoveStatus
+        and set value = this.Dispatch (UpdateStatus value)
+
+    override this.StartElmishLoop(view: Avalonia.Controls.Control) =
+        Program.mkAvaloniaSimple (init path) update
+        |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+        |> Program.withConsoleTrace
+        |> Program.runView this view
+
+    static member DesignVM = new FileViewModel(@"c:\hiberfil.sys", MoveProgress = 12, MoveStatus = Failed)
