@@ -16,3 +16,13 @@ type BytesToMegabytesConverter() =
 
         member this.ConvertBack(value: obj, targetType: Type, parameter: obj, culture: Globalization.CultureInfo): obj =
             raise (NotSupportedException())
+
+type ValueEqualsParameterConverter() =
+    static member Instance = ValueEqualsParameterConverter() :> IValueConverter
+
+    interface IValueConverter with
+        member this.Convert(value: obj, targetType: Type, parameter: obj, culture: Globalization.CultureInfo): obj =
+            value = parameter
+
+        member this.ConvertBack(value: obj, targetType: Type, parameter: obj, culture: Globalization.CultureInfo): obj =
+            raise (NotSupportedException())

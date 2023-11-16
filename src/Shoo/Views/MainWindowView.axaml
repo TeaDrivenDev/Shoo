@@ -26,6 +26,13 @@
             <Setter Property="Margin" Value="3 0 0 0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
+
+        <Style Selector="ProgressBar.Completed">
+            <Setter Property="Foreground" Value="DarkGreen" />
+        </Style>
+        <Style Selector="ProgressBar.Failed">
+            <Setter Property="Foreground" Value="Red" />
+        </Style>
     </Window.Styles>
 
     <Grid Margin="5">
@@ -139,6 +146,12 @@
                             <Grid>
                                 <ProgressBar MinWidth="1"
                                              Margin="10 0"
+                                             Classes.Completed="{Binding MoveStatus,
+                                                                         Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
+                                                                         ConverterParameter={x:Static vm:MoveFileStatus.Complete}}"
+                                             Classes.Failed="{Binding Path=MoveStatus,
+                                                                      Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
+                                                                      ConverterParameter={x:Static vm:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
                                              Value="{Binding MoveProgress}" />
                             </Grid>

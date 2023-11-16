@@ -192,7 +192,11 @@ module MainWindowViewModel =
 
     let designVM =
         let model, _ = init ()
-        model.Files.Add(FileViewModel @"c:\hiberfil.sys")
+
+        let fileViewModel = FileViewModel @"c:\hiberfil.sys"
+        fileViewModel.MoveProgress <- 12
+        fileViewModel.MoveStatus <- Complete
+        model.Files.Add(fileViewModel)
 
         ViewModel.designInstance model (bindings ())
 
