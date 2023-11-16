@@ -3,8 +3,9 @@
 open System
 open System.IO
 open Elmish.Avalonia
+open Elmish
 
-module FileViewModel =
+module File =
     type MoveFileStatus = Waiting | Moving | Complete | Failed
 
     type Model =
@@ -40,29 +41,21 @@ module FileViewModel =
             MoveStatus = Waiting
         }
 
-    let bindings () =
-        [
-            "FileName" |> Binding.oneWay (fun m -> m.FileName)
-            "Time" |> Binding.oneWay (fun m -> m.Time)
-            "Size" |> Binding.oneWay (fun m -> m.Size)
-            "MoveProgress" |> Binding.oneWay (fun m -> m.MoveProgress)
-        ]
+open File
 
-    let designVM =
-        let model =
-            {
-                FullName = "AA"
-                FileName = "AAA"
-                Time = DateTime.Now
-                Size = 1234567890L
-                MoveProgress = 37
-                MoveStatus = Moving
-            }
+type FileViewModel(path: string) = 
+    inherit ReactiveElmishViewModel<Model, Message>(init path ())
 
-        ViewModel.designInstance model (bindings ())
+    member this.FileName = this.Bind _.FileName
+    member this.Time = this.Bind _.Time
+    member this.Size = this.Bind _.Size
+    member this.MoveProgress = this.Bind _.MoveProgress
+        
+    override this.StartElmishLoop(view: Avalonia.Controls.Control) = 
+        Program.mkAvaloniaSimple (init path) update
+        |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+        |> Program.withConsoleTrace
+        |> Program.runView this view
 
-    let vm path =
-        AvaloniaProgram.mkSimple (init path) update bindings
-        |> ElmishViewModel.create
-        |> ElmishViewModel.terminateOnViewUnloaded Terminate
-        :> IElmishViewModel
+    
+    static member DesignVM = new FileViewModel(@"c:/path/file.txt")
