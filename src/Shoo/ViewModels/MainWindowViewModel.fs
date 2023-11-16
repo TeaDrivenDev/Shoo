@@ -182,7 +182,14 @@ module MainWindowViewModel =
             "SelectSourceDirectory" |> Binding.cmd SelectSourceDirectory
             "SelectDestinationDirectory" |> Binding.cmd SelectDestinationDirectory
             "FileTypes" |> Binding.twoWay(_.FileTypes, UpdateFileTypes)
-            "CanActivate" |> Binding.oneWay(fun m -> m.SourceDirectory.PathExists && m.DestinationDirectory.PathExists)
+
+            "CanActivate"
+            |> Binding.oneWay
+                (fun m ->
+                    m.SourceDirectory.PathExists
+                    && m.DestinationDirectory.PathExists
+                    && m.SourceDirectory.Path <> m.DestinationDirectory.Path)
+
             "IsActive" |> Binding.twoWay(_.IsActive, ChangeActive)
             "Files" |> Binding.oneWay(_.Files)
 
