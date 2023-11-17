@@ -64,7 +64,11 @@ module MainWindowViewModel =
 
     let init () =
         {
-            SourceDirectory = ConfiguredDirectory.Empty
+            SourceDirectory =
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Downloads")
+                |> createConfiguredDirectory
             DestinationDirectory = ConfiguredDirectory.Empty
             FileTypes = ""
             ReplacementsFileName = ""
