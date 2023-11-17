@@ -24,7 +24,7 @@ module MainWindowViewModel =
 
     type CreateMode = Create | Replace
 
-    type CopyOperation =
+    type MoveOperation =
         {
             Source: string
             Destination: string
@@ -89,7 +89,7 @@ module MainWindowViewModel =
 
         getFileName 1
 
-    let moveFile startCopyOperation (fileViewModel: FileViewModel) destinationDirectory =
+    let startMoveFile queueMoveOperation (fileViewModel: FileViewModel) destinationDirectory =
         let source = fileViewModel.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
         let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
@@ -100,9 +100,9 @@ module MainWindowViewModel =
             Extension = Path.GetExtension source
             FileViewModel = fileViewModel
         }
-        |> startCopyOperation
+        |> queueMoveOperation
 
-    let moveFile2 copyOperation =
+    let completeMoveFile copyOperation =
         File.Copy(copyOperation.Source, copyOperation.Destination)
 
         let time = (FileInfo copyOperation.Source).LastWriteTimeUtc
@@ -125,7 +125,7 @@ module MainWindowViewModel =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let update tryPickFolder (fileViewModels: Subject<CopyOperation>) message model =
+    let update tryPickFolder (moveOperations: Subject<MoveOperation>) message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -158,7 +158,7 @@ module MainWindowViewModel =
             let vm = FileViewModel path
 
             model.Files.Add(vm)
-            moveFile fileViewModels.OnNext vm model.DestinationDirectory.Path
+            startMoveFile moveOperations.OnNext vm model.DestinationDirectory.Path
 
             model |> withoutCommand
         | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
@@ -209,7 +209,7 @@ module MainWindowViewModel =
 
     let subscriptions
         (watcher: FileSystemWatcher)
-        (copyOperations: Subject<CopyOperation>)
+        (copyOperations: Subject<MoveOperation>)
         (model: Model)
         : Sub<Message> =
         let watchFileSystem dispatch =
@@ -230,7 +230,7 @@ module MainWindowViewModel =
         let copyFile dispatch =
             let subscription =
                 copyOperations
-                |> Observable.subscribe (moveFile2 >> UpdateFileStatus >> dispatch)
+                |> Observable.subscribe (completeMoveFile >> UpdateFileStatus >> dispatch)
 
             subscription
 
@@ -249,7 +249,7 @@ module MainWindowViewModel =
             fileProvider.TryPickFolder()
 
         let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-        let fileViewModels = new System.Reactive.Subjects.Subject<CopyOperation>()
+        let fileViewModels = new System.Reactive.Subjects.Subject<MoveOperation>()
 
         let compositeDisposable = new CompositeDisposable()
         compositeDisposable.Add watcher
