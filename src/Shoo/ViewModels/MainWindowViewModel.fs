@@ -232,6 +232,13 @@ module MainWindowViewModel =
                 |> Observable.subscribe (_.FullPath >> AddFile >> dispatch)
 
             watcher.Path <- model.SourceDirectory.Path
+
+            watcher.Filters.Clear()
+
+            model.FileTypes.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map (sprintf "*.%s")
+            |> Array.iter watcher.Filters.Add
+
             watcher.EnableRaisingEvents <- true
 
             {
