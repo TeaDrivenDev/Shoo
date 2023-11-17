@@ -32,6 +32,13 @@ module MainWindowViewModel =
             FileViewModel: FileViewModel
         }
 
+    type Context =
+        {
+            TryPickFolder: unit -> System.Threading.Tasks.Task<string option>
+            QueueMoveOperation: MoveOperation -> unit
+            Cleanup: unit -> unit
+        }
+
     type Model =
         {
             SourceDirectory: ConfiguredDirectory
@@ -125,7 +132,7 @@ module MainWindowViewModel =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let update tryPickFolder (moveOperations: Subject<MoveOperation>) message model =
+    let update context message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -148,17 +155,20 @@ module MainWindowViewModel =
             |> Option.defaultValue model
             |> withoutCommand
         | SelectSourceDirectory ->
-            model, Cmd.OfTask.perform tryPickFolder () UpdateSourceDirectory
+            model, Cmd.OfTask.perform context.TryPickFolder () UpdateSourceDirectory
         | SelectDestinationDirectory ->
-            model, Cmd.OfTask.perform tryPickFolder () UpdateDestinationDirectory
+            model, Cmd.OfTask.perform context.TryPickFolder () UpdateDestinationDirectory
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
-        | Terminate -> model |> withoutCommand
+        | Terminate ->
+            context.Cleanup ()
+
+            model |> withoutCommand
         | AddFile path ->
             let vm = FileViewModel path
 
             model.Files.Add(vm)
-            startMoveFile moveOperations.OnNext vm model.DestinationDirectory.Path
+            startMoveFile context.QueueMoveOperation vm model.DestinationDirectory.Path
 
             model |> withoutCommand
         | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
@@ -249,14 +259,23 @@ module MainWindowViewModel =
             fileProvider.TryPickFolder()
 
         let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-        let fileViewModels = new System.Reactive.Subjects.Subject<MoveOperation>()
+        let moveOperations = new System.Reactive.Subjects.Subject<MoveOperation>()
 
         let compositeDisposable = new CompositeDisposable()
         compositeDisposable.Add watcher
-        compositeDisposable.Add fileViewModels
+        compositeDisposable.Add moveOperations
 
-        AvaloniaProgram.mkProgram init (update tryPickFolder fileViewModels) bindings
-        |> AvaloniaProgram.withSubscription (subscriptions watcher fileViewModels)
+        let cleanup () = compositeDisposable.Dispose()
+
+        let context =
+            {
+                TryPickFolder = tryPickFolder
+                QueueMoveOperation = moveOperations.OnNext
+                Cleanup = cleanup
+            }
+
+        AvaloniaProgram.mkProgram init (update context) bindings
+        |> AvaloniaProgram.withSubscription (subscriptions watcher moveOperations)
         |> ElmishViewModel.create
         |> ElmishViewModel.terminateOnViewUnloaded Terminate
         :> IElmishViewModel
