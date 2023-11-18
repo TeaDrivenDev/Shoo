@@ -4,6 +4,7 @@ open System
 open System.Collections.ObjectModel
 open System.IO
 open System.Reactive.Disposables
+open System.Reactive.Subjects
 
 open FSharp.Control.Reactive
 
@@ -223,7 +224,8 @@ module MainWindowViewModel =
 
     let subscriptions
         (watcher: FileSystemWatcher)
-        (copyOperations: Subject<MoveOperation>)
+        (moveOperations: Subject<MoveOperation>)
+        (canMoveFile: IObservable<bool>)
         (model: Model)
         : Sub<Message> =
         let watchFileSystem dispatch =
@@ -250,7 +252,9 @@ module MainWindowViewModel =
 
         let copyFile dispatch =
             let subscription =
-                copyOperations
+                (moveOperations, canMoveFile)
+                ||> Observable.combineLatest
+                |> Observable.map
                 |> Observable.subscribe (completeMoveFile >> UpdateFileStatus >> dispatch)
 
             subscription
@@ -270,11 +274,13 @@ module MainWindowViewModel =
             fileProvider.TryPickFolder()
 
         let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-        let moveOperations = new System.Reactive.Subjects.Subject<MoveOperation>()
+        let moveOperations = new ReplaySubject<MoveOperation>()
+        let canMoveFile = new BehaviorSubject<bool>(true)
 
         let compositeDisposable = new CompositeDisposable()
         compositeDisposable.Add watcher
         compositeDisposable.Add moveOperations
+        compositeDisposable.Add canMoveFile
 
         let cleanup () = compositeDisposable.Dispose()
 
@@ -286,7 +292,8 @@ module MainWindowViewModel =
             }
 
         AvaloniaProgram.mkProgram init (update context) bindings
-        |> AvaloniaProgram.withSubscription (subscriptions watcher moveOperations)
+        |> AvaloniaProgram.withSubscription
+            (subscriptions watcher moveOperations canMoveFile)
         |> ElmishViewModel.create
         |> ElmishViewModel.terminateOnViewUnloaded Terminate
         :> IElmishViewModel
