@@ -45,8 +45,6 @@ module Main =
     type Message =
         | UpdateSourceDirectory of string option
         | UpdateDestinationDirectory of string option
-        | SelectSourceDirectory
-        | SelectDestinationDirectory
         | UpdateFileTypes of string
         | ChangeActive of bool
         | Terminate
@@ -129,7 +127,7 @@ module Main =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let update tryPickFolder (fileViewModels: Subject<CopyOperation>) message model =
+    let update (fileViewModels: Subject<CopyOperation>) message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -151,10 +149,6 @@ module Main =
                     })
             |> Option.defaultValue model
             |> withoutCommand
-        | SelectSourceDirectory ->
-            model, Cmd.OfTask.perform tryPickFolder () UpdateSourceDirectory
-        | SelectDestinationDirectory ->
-            model, Cmd.OfTask.perform tryPickFolder () UpdateDestinationDirectory
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
@@ -224,7 +218,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     let copyOperations = new System.Reactive.Subjects.Subject<CopyOperation>()
 
     let store = 
-        Program.mkAvaloniaProgram init (update folderPicker.TryPickFolder copyOperations)
+        Program.mkAvaloniaProgram init (update copyOperations)
         |> Program.withSubscription (subscriptions watcher copyOperations)
         |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
         |> Program.withConsoleTrace
@@ -256,8 +250,17 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
 
     member this.Files = this.Bind(store, _.Files)
 
-    member this.SelectSourceDirectory() = store.Dispatch(SelectSourceDirectory)
-    member this.SelectDestinationDirectory() = store.Dispatch(SelectDestinationDirectory)
+    member this.SelectSourceDirectory() = 
+        task {
+            let! path = folderPicker.TryPickFolder()
+            return store.Dispatch(UpdateSourceDirectory path)
+        }
+
+    member this.SelectDestinationDirectory() =
+        task {
+            let! path = folderPicker.TryPickFolder()
+            return store.Dispatch(UpdateDestinationDirectory path)
+        }
 
     static member DesignVM =
         new MainWindowViewModel(Design.stub)
