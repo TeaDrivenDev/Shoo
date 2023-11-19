@@ -10,6 +10,7 @@ open FSharp.Control.Reactive
 open Elmish
 open Elmish.Avalonia
 
+open Shoo
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
@@ -39,7 +40,7 @@ module Main =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            Files: ObservableCollection<FileViewModel>
+            FileQueue: ObservableCollection<FileViewModel>
         }
 
     type Message =
@@ -48,7 +49,7 @@ module Main =
         | UpdateFileTypes of string
         | ChangeActive of bool
         | Terminate
-        | AddFile of string
+        | QueueFileCopy of string
         | UpdateFileStatus of (FileViewModel * int * MoveFileStatus)
         // TODO Temporary
         | RemoveFile
@@ -64,7 +65,7 @@ module Main =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
-            Files = ObservableCollection()
+            FileQueue = ObservableCollection()
         }
         |> withoutCommand
 
@@ -91,20 +92,18 @@ module Main =
 
         getFileName 1
 
-    let moveFile startCopyOperation (fileViewModel: FileViewModel) destinationDirectory =
+    let mkCopyOperation (fileViewModel: FileViewModel) destinationDirectory =
         let source = fileViewModel.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
         let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
-
         {
             Source = source
             Destination = destination
             Extension = Path.GetExtension source
             FileViewModel = fileViewModel
         }
-        |> startCopyOperation
 
-    let moveFile2 copyOperation =
+    let copyFile copyOperation =
         File.Copy(copyOperation.Source, copyOperation.Destination)
 
         let time = (FileInfo copyOperation.Source).LastWriteTimeUtc
@@ -127,7 +126,7 @@ module Main =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let update (fileViewModels: Subject<CopyOperation>) message model =
+    let update message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -152,13 +151,9 @@ module Main =
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
-        | AddFile path ->
-            let vm = new FileViewModel(path)
-            // vm.StartElmishLoop null
-
-            model.Files.Add(vm)
-            moveFile fileViewModels.OnNext vm model.DestinationDirectory.Path
-
+        | QueueFileCopy path ->
+            let fileVM = new FileViewModel(path)
+            model.FileQueue.Add(fileVM)
             model |> withoutCommand
         | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
             fileViewModel.MoveProgress <- progress
@@ -167,67 +162,58 @@ module Main =
             model |> withoutCommand
         // TODO Temporary
         | RemoveFile ->
-            if model.Files.Count > 0
-            then model.Files.RemoveAt 0
+            if model.FileQueue.Count > 0
+            then model.FileQueue.RemoveAt 0
 
             model |> withoutCommand
 
-    let subscriptions
-        (watcher: FileSystemWatcher)
-        (copyOperations: Subject<CopyOperation>)
-        (model: Model)
-        : Sub<Message> =
-        let watchFileSystem dispatch =
+    let subscriptions (model: Model) : Sub<Message> =
+
+        /// Watches for file renames and adds them to the file copy queue.
+        let watchFileSystemSub dispatch =
+            let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
             let subscription =
                 watcher.Renamed
-                |> Observable.subscribe (_.FullPath >> AddFile >> dispatch)
+                |> Observable.subscribe (_.FullPath >> QueueFileCopy >> dispatch)
 
             watcher.Path <- model.SourceDirectory.Path
             watcher.EnableRaisingEvents <- true
 
-            {
-                new IDisposable with
-                    member _.Dispose() =
-                        watcher.EnableRaisingEvents <- false
-                        subscription.Dispose()
-            }
+            Disposable.create (fun () -> 
+                watcher.Dispose()
+                subscription.Dispose())
 
-        let copyFile dispatch =
-            let subscription =
-                copyOperations
-                |> Observable.subscribe (moveFile2 >> UpdateFileStatus >> dispatch)
-
-            subscription
+        /// Looks for a pending file copy and executes it.
+        let copyFileSub dispatch =
+            model.FileQueue 
+            |> Seq.tryFind (fun f -> f.MoveProgress < 100)
+            |> Option.iter (fun pfo ->
+                mkCopyOperation pfo model.DestinationDirectory.Path
+                |> copyFile
+                |> UpdateFileStatus
+                |> dispatch
+            )
+            Disposable.empty
 
         [
             if model.IsActive then
-                yield!
-                    [
-                        [ nameof watchFileSystem ], watchFileSystem
-                        [ nameof copyFile ], copyFile
-                    ]
+                [ nameof watchFileSystemSub ], watchFileSystemSub
+
+                if model.FileQueue |> Seq.exists (fun f -> f.MoveProgress < 100) then
+                    [ nameof copyFileSub ], copyFileSub
         ]
 
 open Main
-open Shoo
 
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
 
-    let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-    let copyOperations = new System.Reactive.Subjects.Subject<CopyOperation>()
-
     let store = 
-        Program.mkAvaloniaProgram init (update copyOperations)
-        |> Program.withSubscription (subscriptions watcher copyOperations)
-        |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
+        Program.mkAvaloniaProgram init update
+        |> Program.withSubscription subscriptions
+        |> Program.withErrorHandler (fun (_, ex) -> printfn $"Error: %s{ex.Message}")
         |> Program.withConsoleTrace
-        //|> Program.terminateOnViewUnloaded this Terminate
-        |> Program.mkStore
-
-
-    do this.AddDisposable watcher
-       this.AddDisposable copyOperations
+        |> Program.mkStoreWithTerminate this Terminate
 
     member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
     member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
@@ -248,7 +234,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
         with get () = this.Bind(store, _.IsActive)
         and set value = store.Dispatch(ChangeActive value)
 
-    member this.Files = this.Bind(store, _.Files)
+    member this.Files = this.Bind(store, _.FileQueue)
 
     member this.SelectSourceDirectory() = 
         task {
