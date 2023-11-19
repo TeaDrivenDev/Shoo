@@ -15,7 +15,7 @@ open TeaDrivenDev.Prelude.IO
 
 type Subject<'T> = System.Reactive.Subjects.Subject<'T>
 
-module MainWindow =
+module Main =
     [<Literal>]
     let shooFileNameExtension = ".__shoo__"
 
@@ -214,56 +214,50 @@ module MainWindow =
                     ]
         ]
 
-open MainWindow
+open Main
+open Shoo
 
-type MainWindowViewModel() =
-    inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
-
-    let tryPickFolder () =
-        let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
-        fileProvider.TryPickFolder()
+type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
+    inherit ReactiveElmishViewModel()
 
     let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
     let copyOperations = new System.Reactive.Subjects.Subject<CopyOperation>()
 
-    let compositeDisposable = new CompositeDisposable()
-
-    do
-        compositeDisposable.Add watcher
-        compositeDisposable.Add copyOperations
-
-    member this.SourceDirectory = this.Bind _.SourceDirectory.Path
-    member this.DestinationDirectory = this.Bind _.DestinationDirectory.Path
-    member this.IsSourceDirectoryValid = this.Bind _.SourceDirectory.PathExists
-    member this.IsDestinationDirectoryValid = this.Bind _.DestinationDirectory.PathExists
-    member this.ReplacementsFileName = this.Bind _.ReplacementsFileName
-    member this.FileTypes
-        with get () = this.Bind _.FileTypes
-        and set value = this.Dispatch(UpdateFileTypes value)
-
-    member this.CanActivate =
-        this.Bind (
-            fun m ->
-                m.SourceDirectory.PathExists
-                && m.DestinationDirectory.PathExists
-                && m.DestinationDirectory.Path <> m.SourceDirectory.Path)
-
-    member this.IsActive
-        with get () = this.Bind _.IsActive
-        and set value = this.Dispatch(ChangeActive value)
-
-    member this.Files = this.Bind _.Files
-
-    member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
-    member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
-
-    override this.StartElmishLoop(view: Avalonia.Controls.Control) =
-        Program.mkAvaloniaProgram init (update tryPickFolder copyOperations)
+    let store = 
+        Program.mkAvaloniaProgram init (update folderPicker.TryPickFolder copyOperations)
         |> Program.withSubscription (subscriptions watcher copyOperations)
-        |> Program.terminateOnViewUnloaded this Terminate
         |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
         |> Program.withConsoleTrace
-        |> Program.runView this view
+        //|> Program.terminateOnViewUnloaded this Terminate
+        |> Program.mkStore
+
+
+    do this.AddDisposable watcher
+       this.AddDisposable copyOperations
+
+    member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
+    member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
+    member this.IsSourceDirectoryValid = this.Bind(store, _.SourceDirectory.PathExists)
+    member this.IsDestinationDirectoryValid = this.Bind(store, _.DestinationDirectory.PathExists)
+    member this.ReplacementsFileName = this.Bind(store, _.ReplacementsFileName)
+    member this.FileTypes
+        with get () = this.Bind(store, _.FileTypes)
+        and set value = store.Dispatch(UpdateFileTypes value)
+
+    member this.CanActivate =
+        this.Bind (store, fun m ->
+            m.SourceDirectory.PathExists
+            && m.DestinationDirectory.PathExists
+            && m.DestinationDirectory.Path <> m.SourceDirectory.Path)
+
+    member this.IsActive
+        with get () = this.Bind(store, _.IsActive)
+        and set value = store.Dispatch(ChangeActive value)
+
+    member this.Files = this.Bind(store, _.Files)
+
+    member this.SelectSourceDirectory() = store.Dispatch(SelectSourceDirectory)
+    member this.SelectDestinationDirectory() = store.Dispatch(SelectDestinationDirectory)
 
     static member DesignVM =
-        new MainWindowViewModel()
+        new MainWindowViewModel(Design.stub)

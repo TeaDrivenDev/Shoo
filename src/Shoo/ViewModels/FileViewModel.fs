@@ -43,25 +43,26 @@ module File =
 open File
 
 type FileViewModel(path: string) =
-    inherit ReactiveElmishViewModel<Model, Message>(init path ())
-
-    member this.FullName = this.Bind _.FullName
-    member this.FileName = this.Bind _.FileName
-    member this.Time = this.Bind _.Time
-    member this.FileSize = this.Bind _.FileSize
-
-    member this.MoveProgress
-        with get () = this.Bind _.MoveProgress
-        and set value = this.Dispatch (UpdateProgress value)
-
-    member this.MoveStatus
-        with get () = this.Bind _.MoveStatus
-        and set value = this.Dispatch (UpdateStatus value)
-
-    override this.StartElmishLoop(view: Avalonia.Controls.Control) =
+    inherit ReactiveElmishViewModel()
+     
+    let store = 
         Program.mkAvaloniaSimple (init path) update
         |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
         |> Program.withConsoleTrace
-        |> Program.runView this view
+        |> Program.mkStore
+        
+
+    member this.FullName = this.Bind(store, _.FullName)
+    member this.FileName = this.Bind(store, _.FileName)
+    member this.Time = this.Bind(store, _.Time)
+    member this.FileSize = this.Bind(store, _.FileSize)
+
+    member this.MoveProgress
+        with get () = this.Bind(store, _.MoveProgress)
+        and set value = store.Dispatch (UpdateProgress value)
+
+    member this.MoveStatus
+        with get () = this.Bind(store, _.MoveStatus)
+        and set value = store.Dispatch (UpdateStatus value)
 
     static member DesignVM = new FileViewModel(@"c:\hiberfil.sys", MoveProgress = 12, MoveStatus = Failed)
