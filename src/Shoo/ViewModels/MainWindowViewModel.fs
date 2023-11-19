@@ -124,6 +124,9 @@ module Main =
 
         copyOperation.FileViewModel, 100, moveStatus
 
+    let hasPendingOperations (fileQueue: FileOperationViewModel seq) =
+        fileQueue |> Seq.exists (fun f -> f.Progress < 100)
+
     let update message model =
         match message with
         | UpdateSourceDirectory value ->
@@ -181,8 +184,8 @@ module Main =
                 watcher.Dispose()
                 subscription.Dispose())
 
-        /// Looks for a pending file copy and executes it.
-        let copyFileSub dispatch =
+        /// Processes the pending file operation.
+        let processQueueSub dispatch =
             model.FileQueue 
             |> Seq.tryFind (fun f -> f.Progress < 100)
             |> Option.iter (fun pfo ->
@@ -197,8 +200,8 @@ module Main =
             if model.IsActive then
                 [ nameof watchFileSystemSub ], watchFileSystemSub
 
-                if model.FileQueue |> Seq.exists (fun f -> f.Progress < 100) then
-                    [ nameof copyFileSub ], copyFileSub
+                if model.FileQueue |> hasPendingOperations then
+                    [ nameof processQueueSub ], processQueueSub
         ]
 
 open Main
