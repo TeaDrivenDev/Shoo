@@ -14,8 +14,6 @@ open Shoo
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
-type Subject<'T> = System.Reactive.Subjects.Subject<'T>
-
 module Main =
     [<Literal>]
     let shooFileNameExtension = ".__shoo__"
@@ -30,7 +28,7 @@ module Main =
             Source: string
             Destination: string
             Extension: string
-            FileViewModel: FileViewModel
+            FileViewModel: FileOperationViewModel
         }
 
     type Model =
@@ -40,7 +38,7 @@ module Main =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            FileQueue: ObservableCollection<FileViewModel>
+            FileQueue: ObservableCollection<FileOperationViewModel>
         }
 
     type Message =
@@ -50,7 +48,7 @@ module Main =
         | ChangeActive of bool
         | Terminate
         | QueueFileCopy of string
-        | UpdateFileStatus of (FileViewModel * int * MoveFileStatus)
+        | UpdateFileStatus of (FileOperationViewModel * int * MoveFileStatus)
         // TODO Temporary
         | RemoveFile
 
@@ -92,7 +90,7 @@ module Main =
 
         getFileName 1
 
-    let mkCopyOperation (fileViewModel: FileViewModel) destinationDirectory =
+    let mkCopyOperation (fileViewModel: FileOperationViewModel) destinationDirectory =
         let source = fileViewModel.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
         let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
@@ -152,12 +150,12 @@ module Main =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | QueueFileCopy path ->
-            let fileVM = new FileViewModel(path)
+            let fileVM = new FileOperationViewModel(path)
             model.FileQueue.Add(fileVM)
             model |> withoutCommand
         | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
-            fileViewModel.MoveProgress <- progress
-            fileViewModel.MoveStatus <- moveFileStatus
+            fileViewModel.Progress <- progress
+            fileViewModel.Status <- moveFileStatus
 
             model |> withoutCommand
         // TODO Temporary
@@ -186,7 +184,7 @@ module Main =
         /// Looks for a pending file copy and executes it.
         let copyFileSub dispatch =
             model.FileQueue 
-            |> Seq.tryFind (fun f -> f.MoveProgress < 100)
+            |> Seq.tryFind (fun f -> f.Progress < 100)
             |> Option.iter (fun pfo ->
                 mkCopyOperation pfo model.DestinationDirectory.Path
                 |> copyFile
@@ -199,7 +197,7 @@ module Main =
             if model.IsActive then
                 [ nameof watchFileSystemSub ], watchFileSystemSub
 
-                if model.FileQueue |> Seq.exists (fun f -> f.MoveProgress < 100) then
+                if model.FileQueue |> Seq.exists (fun f -> f.Progress < 100) then
                     [ nameof copyFileSub ], copyFileSub
         ]
 

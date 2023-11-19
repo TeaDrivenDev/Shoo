@@ -8,15 +8,15 @@ open Elmish.Avalonia
 
 type MoveFileStatus = Waiting | Moving | Complete | Failed
 
-module File =
+module private FileOperation =
     type Model =
         {
             FullName: string
             FileName: string
             Time: DateTime
             FileSize: int64
-            MoveProgress: int
-            MoveStatus: MoveFileStatus
+            Progress: int
+            Status: MoveFileStatus
         }
 
     type Message =
@@ -25,8 +25,8 @@ module File =
 
     let update message model =
         match message with
-        | UpdateProgress progress -> { model with MoveProgress = progress }
-        | UpdateStatus status -> { model with MoveStatus = status }
+        | UpdateProgress progress -> { model with Progress = progress }
+        | UpdateStatus status -> { model with Status = status }
 
     let init path () =
         let fileInfo = FileInfo path
@@ -36,13 +36,13 @@ module File =
             FileName = fileInfo.Name
             Time = fileInfo.LastWriteTime
             FileSize = fileInfo.Length
-            MoveProgress = 0
-            MoveStatus = Waiting
+            Progress = 0
+            Status = Waiting
         }
 
-open File
+open FileOperation
 
-type FileViewModel(path: string) =
+type FileOperationViewModel(path: string) =
     inherit ReactiveElmishViewModel()
      
     let store = 
@@ -50,19 +50,18 @@ type FileViewModel(path: string) =
         |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
         |> Program.withConsoleTrace
         |> Program.mkStore
-        
 
     member this.FullName = this.Bind(store, _.FullName)
     member this.FileName = this.Bind(store, _.FileName)
     member this.Time = this.Bind(store, _.Time)
     member this.FileSize = this.Bind(store, _.FileSize)
 
-    member this.MoveProgress
-        with get () = this.Bind(store, _.MoveProgress)
+    member this.Progress
+        with get () = this.Bind(store, _.Progress)
         and set value = store.Dispatch (UpdateProgress value)
 
-    member this.MoveStatus
-        with get () = this.Bind(store, _.MoveStatus)
+    member this.Status
+        with get () = this.Bind(store, _.Status)
         and set value = store.Dispatch (UpdateStatus value)
 
-    static member DesignVM = new FileViewModel(@"c:\hiberfil.sys", MoveProgress = 12, MoveStatus = Failed)
+    static member DesignVM = new FileOperationViewModel(@"c:\hiberfil.sys", Progress = 12, Status = Failed)
