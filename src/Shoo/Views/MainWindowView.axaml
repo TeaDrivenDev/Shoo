@@ -120,7 +120,7 @@
 
         <DataGrid Grid.Row="2"
                   IsEnabled="{Binding IsActive}"
-                  ItemsSource="{Binding Files}">
+                  ItemsSource="{Binding FileQueue}">
             <DataGrid.Columns>
                 <DataGridTextColumn Width="*"
                                     Binding="{Binding FileName}"

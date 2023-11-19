@@ -235,7 +235,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
         with get () = this.Bind(store, _.IsActive)
         and set value = store.Dispatch(ChangeActive value)
 
-    member this.Files = this.Bind(store, _.FileQueue)
+    member this.FileQueue = this.Bind(store, _.FileQueue)
 
     member this.SelectSourceDirectory() = 
         task {
