@@ -1,20 +1,21 @@
 ﻿namespace Shoo
 
-open System
-open Elmish.Avalonia
 open Microsoft.Extensions.DependencyInjection
+
+open Elmish.Avalonia
+
 open Shoo.ViewModels
 open Shoo.Views
 
-type AppCompositionRoot() = 
+type AppCompositionRoot() =
     inherit CompositionRoot()
 
     let mainView = MainWindowView()
 
-    override this.RegisterServices(services) = 
+    override this.RegisterServices(services) =
         services.AddSingleton<Services.FolderPickerService>(Services.FolderPickerService(mainView))
 
-    override this.RegisterViews() = 
+    override this.RegisterViews() =
         Map [
-            VM.Create<MainWindowViewModel>(), View.Singleton(mainView)
+            VM.Key<MainWindowViewModel>(), View.Singleton(mainView)
         ]
