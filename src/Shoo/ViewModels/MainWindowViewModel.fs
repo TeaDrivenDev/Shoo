@@ -124,11 +124,6 @@ module Main =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let processFileOperationExternalMessage dispatch message fileOperationViewModel =
-        match message with
-        | Remove -> RemoveFile fileOperationViewModel |> dispatch
-        | Retry -> () // TODO
-
     let update dispatchExternalMessage message model =
         match message with
         | UpdateSourceDirectory value ->
@@ -155,9 +150,7 @@ module Main =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | QueueFileCopy path ->
-            let fileVM =
-                new FileOperationViewModel(path, processFileOperationExternalMessage dispatchExternalMessage)
-
+            let fileVM = new FileOperationViewModel(path)
             model.FileQueue.Add(fileVM)
             let operation = mkCopyOperation fileVM model.DestinationDirectory.Path
             model, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
@@ -244,5 +237,12 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
             return store.Dispatch(UpdateDestinationDirectory path)
         }
 
-    static member DesignVM =
+    member this.Remove(file: obj)  = 
+        file |> unbox |> RemoveFile |> store.Dispatch
+        this.OnPropertyChanged("FileQueue") // Manually refresh table
+
+    member this.Retry(file: obj) = 
+        printfn "Retrying" // TODO: Implement
+
+    static member DesignVM = 
         new MainWindowViewModel(Design.stub)
