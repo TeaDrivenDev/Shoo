@@ -13,7 +13,6 @@
 		x:CompileBindings="False"
         Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.DesignVM}}"
         Icon="/Assets/avalonia-logo.ico"
-		Name="mainWindow"
         mc:Ignorable="d">
     <Window.Styles>
         <Style Selector="TextBox.Invalid">
@@ -168,7 +167,7 @@
 
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        Command="{Binding #mainWindow.DataContext.Remove}"
+                                        Command="{Binding $parent[Window].DataContext.Remove}"
 										CommandParameter="{Binding .}"
                                         Content="Remove"
                                         IsVisible="{Binding Status,
@@ -179,7 +178,7 @@
 								
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        Command="{Binding #mainWindow.DataContext.Retry}"
+                                        Command="{Binding $parent[Window].DataContext.Retry}"
 										CommandParameter="{Binding .}"
                                         Content="Retry"
                                         IsVisible="{Binding Status,
