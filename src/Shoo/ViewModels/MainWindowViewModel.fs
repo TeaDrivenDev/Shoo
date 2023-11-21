@@ -3,7 +3,6 @@
 open System
 open System.Collections.ObjectModel
 open System.IO
-open System.Reactive.Disposables
 
 open FSharp.Control.Reactive
 
@@ -13,6 +12,8 @@ open Elmish.Avalonia
 open Shoo
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
+
+type Subject<'T> = System.Reactive.Subjects.Subject<'T>
 
 module Main =
     [<Literal>]
@@ -49,8 +50,7 @@ module Main =
         | Terminate
         | QueueFileCopy of string
         | UpdateFileStatus of (FileOperationViewModel * int * MoveFileStatus)
-        // TODO Temporary
-        | RemoveFile
+        | RemoveFile of FileOperationViewModel
 
     let init () =
         {
@@ -124,7 +124,12 @@ module Main =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let update message model =
+    let processFileOperationExternalMessage dispatch message fileOperationViewModel =
+        match message with
+        | Remove -> RemoveFile fileOperationViewModel |> dispatch
+        | Retry -> () // TODO
+
+    let update dispatchExternalMessage message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -150,7 +155,9 @@ module Main =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | QueueFileCopy path ->
-            let fileVM = new FileOperationViewModel(path, ignore) // TODO
+            let fileVM =
+                new FileOperationViewModel(path, processFileOperationExternalMessage dispatchExternalMessage)
+
             model.FileQueue.Add(fileVM)
             let operation = mkCopyOperation fileVM model.DestinationDirectory.Path
             model, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
@@ -159,14 +166,12 @@ module Main =
             fileViewModel.Status <- moveFileStatus
 
             model |> withoutCommand
-        // TODO Temporary
-        | RemoveFile ->
-            if model.FileQueue.Count > 0
-            then model.FileQueue.RemoveAt 0
+        | RemoveFile fileOperationViewModel ->
+            model.FileQueue.Remove fileOperationViewModel |> ignore
 
             model |> withoutCommand
 
-    let subscriptions (model: Model) : Sub<Message> =
+    let subscriptions (externalMessages: Subject<Message>) (model: Model) : Sub<Message> =
 
         /// Watches for file renames and adds them to the file copy queue.
         let watchFileSystemSub dispatch =
@@ -182,9 +187,14 @@ module Main =
                 watcher.Dispose()
                 subscription.Dispose())
 
+        let externalMessageSub dispatch =
+            externalMessages |> Observable.subscribe dispatch
+
         [
             if model.IsActive then
                 [ nameof watchFileSystemSub ], watchFileSystemSub
+
+            [ nameof externalMessageSub ], externalMessageSub
         ]
 
 open Main
@@ -192,9 +202,11 @@ open Main
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
 
+    let externalMessages = new Subject<Message>()
+
     let store =
-        Program.mkAvaloniaProgram init update
-        |> Program.withSubscription subscriptions
+        Program.mkAvaloniaProgram init (update externalMessages.OnNext)
+        |> Program.withSubscription (subscriptions externalMessages)
         |> Program.withErrorHandler (fun (_, ex) -> printfn $"Error: %s{ex.Message}")
         |> Program.withConsoleTrace
         |> Program.mkStoreWithTerminate this Terminate

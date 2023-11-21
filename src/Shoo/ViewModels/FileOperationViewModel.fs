@@ -48,7 +48,7 @@ open FileOperation
 
 type FileOperationViewModel(
     path: string,
-    externalDispatch: FileOperationExternalMessage * FileOperationViewModel -> unit) =
+    externalDispatch: FileOperationExternalMessage -> FileOperationViewModel -> unit) =
     inherit ReactiveElmishViewModel()
 
     let store =
@@ -70,9 +70,9 @@ type FileOperationViewModel(
         with get () = this.Bind(store, _.Status)
         and set value = store.Dispatch (UpdateStatus value)
 
-    member this.Remove() = (Remove, this) |> externalDispatch
+    member this.Remove() = (Remove, this) ||> externalDispatch
 
-    member this.Retry() = (Retry, this) |> externalDispatch
+    member this.Retry() = (Retry, this) ||> externalDispatch
 
     static member DesignVM =
-        new FileOperationViewModel(@"c:\hiberfil.sys", ignore, Progress = 12, Status = Failed)
+        new FileOperationViewModel(@"c:\hiberfil.sys", (fun _ _ -> ()), Progress = 12, Status = Failed)
