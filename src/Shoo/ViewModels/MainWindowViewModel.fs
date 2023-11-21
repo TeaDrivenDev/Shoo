@@ -4,9 +4,32 @@ open Elmish.Avalonia
 open Shoo
 open TeaDrivenDev.Prelude.IO
 open App
+open System.Collections.ObjectModel
 
-type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
+type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
+
+    let _fileQueue = ObservableCollection<File>()
+
+    // Sync model FileQueue with the VM FileQueue ObservableCollection.
+    do  this.Subscribe(
+            store.Observable |> Observable.map (fun m -> m.FileQueue), 
+            fun fileQueueMap ->
+                _fileQueue // Remove files from ObservableCollection
+                |> Seq.filter (fun f -> not (fileQueueMap.ContainsKey f.FullName))
+                |> Seq.iter (fun f -> _fileQueue.Remove(f) |> ignore)
+                    
+                fileQueueMap // Add or update files in ObservableCollection
+                |> Map.toSeq
+                |> Seq.sortBy (fun (_, file) -> file.FullName)
+                |> Seq.iter (fun (_, file) -> 
+                    if _fileQueue |> Seq.exists (fun f -> f.FullName = file.FullName) then
+                        let index = this.FileQueue |> Seq.findIndex (fun f -> f.FullName = file.FullName)
+                        _fileQueue[index] <- file
+                    else
+                        _fileQueue.Add(file)
+                )
+            )
 
     member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
     member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
@@ -27,7 +50,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
         with get () = this.Bind(store, _.IsActive)
         and set value = store.Dispatch(ChangeActive value)
 
-    member this.FileQueue = this.Bind(store, _.FileQueue)
+    member this.FileQueue = _fileQueue
 
     member this.SelectSourceDirectory() =
         task {

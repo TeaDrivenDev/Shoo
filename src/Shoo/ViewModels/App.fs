@@ -73,7 +73,7 @@ module App =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            FileQueue: File list
+            FileQueue: Map<string, File>
         }
 
     type Message =
@@ -97,7 +97,7 @@ module App =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
-            FileQueue = []
+            FileQueue = Map.empty
         }
         |> withoutCommand
 
@@ -170,15 +170,21 @@ module App =
         | QueueFileCopy path ->
             let file = mkFile path
             let operation = mkCopyOperation file model.DestinationDirectory.Path
-            { model with FileQueue = model.FileQueue @ [file] }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
+            { model with 
+                FileQueue = model.FileQueue.Add(file.FullName, file) 
+            }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
         | UpdateFileStatus (file, progress, moveFileStatus) ->
             let updatedFile = { file with Progress = progress; Status = moveFileStatus }
             { model with 
-                FileQueue = model.FileQueue |> List.map (fun f -> if f.FullName = updatedFile.FullName then updatedFile else f)
+                FileQueue = 
+                    model.FileQueue 
+                    |> Map.toSeq
+                    |> Seq.map (fun (fullName, file) -> fullName, if fullName = updatedFile.FullName then updatedFile else file)
+                    |> Map.ofSeq
             } |> withoutCommand
-        | RemoveFile fileOperationViewModel ->
+        | RemoveFile file ->
             { model with 
-                FileQueue = model.FileQueue |> List.filter (fun f -> f.FullName <> fileOperationViewModel.FullName)
+                FileQueue = model.FileQueue.Remove file.FullName
             } |> withoutCommand
 
     let subscriptions (model: Model) : Sub<Message> =
