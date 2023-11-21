@@ -6,8 +6,6 @@ open System.IO
 open Elmish
 open Elmish.Avalonia
 
-type MoveFileStatus = Waiting | Moving | Complete | Failed
-
 module private FileOperation =
     type Model =
         {

@@ -14,7 +14,7 @@
   <ItemGroup>
     <Compile Include="Prelude.fs" />
     <Compile Include="Services\FolderPickerService.fs" />
-    <Compile Include="ViewModels\FileOperationViewModel.fs" />
+    <Compile Include="ViewModels\App.fs" />
     <Compile Include="ViewModels\MainWindowViewModel.fs" />
     <Compile Include="Views\MainWindowView.axaml.fs" />
     <Compile Include="UIUtilities.fs" />

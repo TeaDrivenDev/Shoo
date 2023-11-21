@@ -179,7 +179,7 @@
 								
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        Command="{Binding mainWindow.DataContext.Retry}"
+                                        Command="{Binding #mainWindow.DataContext.Retry}"
 										CommandParameter="{Binding .}"
                                         Content="Retry"
                                         IsVisible="{Binding Status,
