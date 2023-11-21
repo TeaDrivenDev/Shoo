@@ -150,7 +150,7 @@ module Main =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
         | QueueFileCopy path ->
-            let fileVM = new FileOperationViewModel(path)
+            let fileVM = new FileOperationViewModel(path, ignore) // TODO
             model.FileQueue.Add(fileVM)
             let operation = mkCopyOperation fileVM model.DestinationDirectory.Path
             model, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
@@ -178,7 +178,7 @@ module Main =
             watcher.Path <- model.SourceDirectory.Path
             watcher.EnableRaisingEvents <- true
 
-            Disposable.create (fun () -> 
+            Disposable.create (fun () ->
                 watcher.Dispose()
                 subscription.Dispose())
 
@@ -192,7 +192,7 @@ open Main
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
 
-    let store = 
+    let store =
         Program.mkAvaloniaProgram init update
         |> Program.withSubscription subscriptions
         |> Program.withErrorHandler (fun (_, ex) -> printfn $"Error: %s{ex.Message}")
@@ -220,7 +220,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
 
     member this.FileQueue = this.Bind(store, _.FileQueue)
 
-    member this.SelectSourceDirectory() = 
+    member this.SelectSourceDirectory() =
         task {
             let! path = folderPicker.TryPickFolder()
             return store.Dispatch(UpdateSourceDirectory path)

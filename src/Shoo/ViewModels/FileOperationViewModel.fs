@@ -40,12 +40,18 @@ module private FileOperation =
             Status = Waiting
         }
 
+type FileOperationExternalMessage =
+    | Remove
+    | Retry
+
 open FileOperation
 
-type FileOperationViewModel(path: string) =
+type FileOperationViewModel(
+    path: string,
+    externalDispatch: FileOperationExternalMessage * FileOperationViewModel -> unit) =
     inherit ReactiveElmishViewModel()
-     
-    let store = 
+
+    let store =
         Program.mkAvaloniaSimple (init path) update
         |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
         |> Program.withConsoleTrace
@@ -64,4 +70,9 @@ type FileOperationViewModel(path: string) =
         with get () = this.Bind(store, _.Status)
         and set value = store.Dispatch (UpdateStatus value)
 
-    static member DesignVM = new FileOperationViewModel(@"c:\hiberfil.sys", Progress = 12, Status = Failed)
+    member this.Remove() = (Remove, this) |> externalDispatch
+
+    member this.Retry() = (Retry, this) |> externalDispatch
+
+    static member DesignVM =
+        new FileOperationViewModel(@"c:\hiberfil.sys", ignore, Progress = 12, Status = Failed)

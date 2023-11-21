@@ -146,8 +146,15 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid>
-                                <ProgressBar MinWidth="1"
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ProgressBar Grid.Column="0"
+                                             MinWidth="1"
                                              Margin="10 0"
+                                             VerticalAlignment="Center"
                                              Classes.Completed="{Binding Status,
                                                                          Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
                                                                          ConverterParameter={x:Static vm:MoveFileStatus.Complete}}"
@@ -156,6 +163,20 @@
                                                                       ConverterParameter={x:Static vm:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
                                              Value="{Binding Progress}" />
+                                <Button Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding Remove}"
+                                        Content="Remove"
+                                        IsVisible="{Binding Status,
+                                                            Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
+                                                            ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" />
+                                <Button Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding Retry}"
+                                        Content="Remove"
+                                        IsVisible="{Binding Status,
+                                                            Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
+                                                            ConverterParameter={x:Static vm:MoveFileStatus.Failed}}" />
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
