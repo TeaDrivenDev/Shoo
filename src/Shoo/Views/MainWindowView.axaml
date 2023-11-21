@@ -120,7 +120,7 @@
 
         <DataGrid Grid.Row="2"
                   IsEnabled="{Binding IsActive}"
-                  ItemsSource="{Binding Files}">
+                  ItemsSource="{Binding FileQueue}">
             <DataGrid.Columns>
                 <DataGridTextColumn Width="*"
                                     Binding="{Binding FileName}"
@@ -148,14 +148,14 @@
                             <Grid>
                                 <ProgressBar MinWidth="1"
                                              Margin="10 0"
-                                             Classes.Completed="{Binding MoveStatus,
+                                             Classes.Completed="{Binding Status,
                                                                          Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
                                                                          ConverterParameter={x:Static vm:MoveFileStatus.Complete}}"
-                                             Classes.Failed="{Binding Path=MoveStatus,
+                                             Classes.Failed="{Binding Path=Status,
                                                                       Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
                                                                       ConverterParameter={x:Static vm:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
-                                             Value="{Binding MoveProgress}" />
+                                             Value="{Binding Progress}" />
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

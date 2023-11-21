@@ -18,11 +18,8 @@ type App() =
     override this.OnFrameworkInitializationCompleted() =
         match this.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as desktop ->
-            let view = MainWindowView()
-            desktop.MainWindow <- view
-            Services.Init view
-            let vm = new ViewModels.MainWindowViewModel()
-            vm.StartElmishLoop(view)
+            let appRoot = AppCompositionRoot()
+            desktop.MainWindow <- appRoot.GetMainWindow<ViewModels.MainWindowViewModel, Views.MainWindowView>()
         | _ ->
             // leave this here for design view re-renders
             ()

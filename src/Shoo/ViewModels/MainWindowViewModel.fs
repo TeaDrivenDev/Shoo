@@ -10,12 +10,11 @@ open FSharp.Control.Reactive
 open Elmish
 open Elmish.Avalonia
 
+open Shoo
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
 
-type Subject<'T> = System.Reactive.Subjects.Subject<'T>
-
-module MainWindow =
+module Main =
     [<Literal>]
     let shooFileNameExtension = ".__shoo__"
 
@@ -29,7 +28,7 @@ module MainWindow =
             Source: string
             Destination: string
             Extension: string
-            FileViewModel: FileViewModel
+            FileViewModel: FileOperationViewModel
         }
 
     type Model =
@@ -39,19 +38,17 @@ module MainWindow =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            Files: ObservableCollection<FileViewModel>
+            FileQueue: ObservableCollection<FileOperationViewModel>
         }
 
     type Message =
         | UpdateSourceDirectory of string option
         | UpdateDestinationDirectory of string option
-        | SelectSourceDirectory
-        | SelectDestinationDirectory
         | UpdateFileTypes of string
         | ChangeActive of bool
         | Terminate
-        | AddFile of string
-        | UpdateFileStatus of (FileViewModel * int * MoveFileStatus)
+        | QueueFileCopy of string
+        | UpdateFileStatus of (FileOperationViewModel * int * MoveFileStatus)
         // TODO Temporary
         | RemoveFile
 
@@ -66,7 +63,7 @@ module MainWindow =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
-            Files = ObservableCollection()
+            FileQueue = ObservableCollection()
         }
         |> withoutCommand
 
@@ -93,20 +90,18 @@ module MainWindow =
 
         getFileName 1
 
-    let moveFile startCopyOperation (fileViewModel: FileViewModel) destinationDirectory =
+    let mkCopyOperation (fileViewModel: FileOperationViewModel) destinationDirectory =
         let source = fileViewModel.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
         let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
-
         {
             Source = source
             Destination = destination
             Extension = Path.GetExtension source
             FileViewModel = fileViewModel
         }
-        |> startCopyOperation
 
-    let moveFile2 copyOperation =
+    let copyFile copyOperation =
         File.Copy(copyOperation.Source, copyOperation.Destination)
 
         let time = (FileInfo copyOperation.Source).LastWriteTimeUtc
@@ -129,7 +124,7 @@ module MainWindow =
 
         copyOperation.FileViewModel, 100, moveStatus
 
-    let update tryPickFolder (fileViewModels: Subject<CopyOperation>) message model =
+    let update message model =
         match message with
         | UpdateSourceDirectory value ->
             value
@@ -151,119 +146,91 @@ module MainWindow =
                     })
             |> Option.defaultValue model
             |> withoutCommand
-        | SelectSourceDirectory ->
-            model, Cmd.OfTask.perform tryPickFolder () UpdateSourceDirectory
-        | SelectDestinationDirectory ->
-            model, Cmd.OfTask.perform tryPickFolder () UpdateDestinationDirectory
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | Terminate -> model |> withoutCommand
-        | AddFile path ->
-            let vm = new FileViewModel(path)
-            // vm.StartElmishLoop null
-
-            model.Files.Add(vm)
-            moveFile fileViewModels.OnNext vm model.DestinationDirectory.Path
-
-            model |> withoutCommand
+        | QueueFileCopy path ->
+            let fileVM = new FileOperationViewModel(path)
+            model.FileQueue.Add(fileVM)
+            let operation = mkCopyOperation fileVM model.DestinationDirectory.Path
+            model, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
         | UpdateFileStatus (fileViewModel, progress, moveFileStatus) ->
-            fileViewModel.MoveProgress <- progress
-            fileViewModel.MoveStatus <- moveFileStatus
+            fileViewModel.Progress <- progress
+            fileViewModel.Status <- moveFileStatus
 
             model |> withoutCommand
         // TODO Temporary
         | RemoveFile ->
-            if model.Files.Count > 0
-            then model.Files.RemoveAt 0
+            if model.FileQueue.Count > 0
+            then model.FileQueue.RemoveAt 0
 
             model |> withoutCommand
 
-    let subscriptions
-        (watcher: FileSystemWatcher)
-        (copyOperations: Subject<CopyOperation>)
-        (model: Model)
-        : Sub<Message> =
-        let watchFileSystem dispatch =
+    let subscriptions (model: Model) : Sub<Message> =
+
+        /// Watches for file renames and adds them to the file copy queue.
+        let watchFileSystemSub dispatch =
+            let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
             let subscription =
                 watcher.Renamed
-                |> Observable.subscribe (_.FullPath >> AddFile >> dispatch)
+                |> Observable.subscribe (_.FullPath >> QueueFileCopy >> dispatch)
 
             watcher.Path <- model.SourceDirectory.Path
             watcher.EnableRaisingEvents <- true
 
-            {
-                new IDisposable with
-                    member _.Dispose() =
-                        watcher.EnableRaisingEvents <- false
-                        subscription.Dispose()
-            }
-
-        let copyFile dispatch =
-            let subscription =
-                copyOperations
-                |> Observable.subscribe (moveFile2 >> UpdateFileStatus >> dispatch)
-
-            subscription
+            Disposable.create (fun () -> 
+                watcher.Dispose()
+                subscription.Dispose())
 
         [
             if model.IsActive then
-                yield!
-                    [
-                        [ nameof watchFileSystem ], watchFileSystem
-                        [ nameof copyFile ], copyFile
-                    ]
+                [ nameof watchFileSystemSub ], watchFileSystemSub
         ]
 
-open MainWindow
+open Main
 
-type MainWindowViewModel() =
-    inherit ReactiveElmishViewModel<Model, Message>(init() |> fst)
+type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
+    inherit ReactiveElmishViewModel()
 
-    let tryPickFolder () =
-        let fileProvider = Shoo.Services.Get<Shoo.FolderPickerService>()
-        fileProvider.TryPickFolder()
+    let store = 
+        Program.mkAvaloniaProgram init update
+        |> Program.withSubscription subscriptions
+        |> Program.withErrorHandler (fun (_, ex) -> printfn $"Error: %s{ex.Message}")
+        |> Program.withConsoleTrace
+        |> Program.mkStoreWithTerminate this Terminate
 
-    let watcher = new FileSystemWatcher(EnableRaisingEvents = false)
-    let copyOperations = new System.Reactive.Subjects.Subject<CopyOperation>()
-
-    let compositeDisposable = new CompositeDisposable()
-
-    do
-        compositeDisposable.Add watcher
-        compositeDisposable.Add copyOperations
-
-    member this.SourceDirectory = this.Bind _.SourceDirectory.Path
-    member this.DestinationDirectory = this.Bind _.DestinationDirectory.Path
-    member this.IsSourceDirectoryValid = this.Bind _.SourceDirectory.PathExists
-    member this.IsDestinationDirectoryValid = this.Bind _.DestinationDirectory.PathExists
-    member this.ReplacementsFileName = this.Bind _.ReplacementsFileName
+    member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
+    member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
+    member this.IsSourceDirectoryValid = this.Bind(store, _.SourceDirectory.PathExists)
+    member this.IsDestinationDirectoryValid = this.Bind(store, _.DestinationDirectory.PathExists)
+    member this.ReplacementsFileName = this.Bind(store, _.ReplacementsFileName)
     member this.FileTypes
-        with get () = this.Bind _.FileTypes
-        and set value = this.Dispatch(UpdateFileTypes value)
+        with get () = this.Bind(store, _.FileTypes)
+        and set value = store.Dispatch(UpdateFileTypes value)
 
     member this.CanActivate =
-        this.Bind (
-            fun m ->
-                m.SourceDirectory.PathExists
-                && m.DestinationDirectory.PathExists
-                && m.DestinationDirectory.Path <> m.SourceDirectory.Path)
+        this.Bind (store, fun m ->
+            m.SourceDirectory.PathExists
+            && m.DestinationDirectory.PathExists
+            && m.DestinationDirectory.Path <> m.SourceDirectory.Path)
 
     member this.IsActive
-        with get () = this.Bind _.IsActive
-        and set value = this.Dispatch(ChangeActive value)
+        with get () = this.Bind(store, _.IsActive)
+        and set value = store.Dispatch(ChangeActive value)
 
-    member this.Files = this.Bind _.Files
+    member this.FileQueue = this.Bind(store, _.FileQueue)
 
-    member this.SelectSourceDirectory() = this.Dispatch(SelectSourceDirectory)
-    member this.SelectDestinationDirectory() = this.Dispatch(SelectDestinationDirectory)
+    member this.SelectSourceDirectory() = 
+        task {
+            let! path = folderPicker.TryPickFolder()
+            return store.Dispatch(UpdateSourceDirectory path)
+        }
 
-    override this.StartElmishLoop(view: Avalonia.Controls.Control) =
-        Program.mkAvaloniaProgram init (update tryPickFolder copyOperations)
-        |> Program.withSubscription (subscriptions watcher copyOperations)
-        |> Program.terminateOnViewUnloaded this Terminate
-        |> Program.withErrorHandler (fun (_, ex) -> printfn "Error: %s" ex.Message)
-        |> Program.withConsoleTrace
-        |> Program.runView this view
+    member this.SelectDestinationDirectory() =
+        task {
+            let! path = folderPicker.TryPickFolder()
+            return store.Dispatch(UpdateDestinationDirectory path)
+        }
 
     static member DesignVM =
-        new MainWindowViewModel()
+        new MainWindowViewModel(Design.stub)
