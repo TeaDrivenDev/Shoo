@@ -4,18 +4,9 @@ open Elmish.Avalonia
 open Shoo
 open TeaDrivenDev.Prelude.IO
 open App
-open System.Collections.ObjectModel
-open Avalonia.ReactiveUI
-open ReactiveUI
-open DynamicData
-open System
 
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
-    
-    let mutable _fileQueue = Unchecked.defaultof<_>
-    do store.Model.FileQueue.Connect().Bind(&_fileQueue).Subscribe() |> this.AddDisposable
-    
     
     member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
     member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
@@ -36,7 +27,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
         with get () = this.Bind(store, _.IsActive)
         and set value = store.Dispatch(ChangeActive value)
 
-    member this.FileQueue = _fileQueue
+    member this.FileQueue = this.BindSourceCache(store, _.FileQueue)
 
     member this.SelectSourceDirectory() =
         task {

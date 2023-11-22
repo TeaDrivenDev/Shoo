@@ -98,7 +98,7 @@ module App =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
-            FileQueue = new SourceCache<File, string>(fun f -> f.FullName)
+            FileQueue = SourceCache.create _.FullName
         }
         |> withoutCommand
 
@@ -171,15 +171,18 @@ module App =
         | QueueFileCopy path ->
             let file = mkFile path
             let operation = mkCopyOperation file model.DestinationDirectory.Path
-            model.FileQueue.AddOrUpdate(file) 
-            model, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
+            { model with 
+                FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
+            }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
         | UpdateFileStatus (file, progress, moveFileStatus) ->
             let updatedFile = { file with Progress = progress; Status = moveFileStatus }
-            model.FileQueue.AddOrUpdate(updatedFile)
-            model |> withoutCommand
+            { model with 
+                FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile
+            } |> withoutCommand
         | RemoveFile file ->
-            model.FileQueue.RemoveKey file.FullName
-            model |> withoutCommand
+            { model with 
+                FileQueue = model.FileQueue |> SourceCache.removeKey file.FullName
+            } |> withoutCommand
 
     let subscriptions (model: Model) : Sub<Message> =
 
