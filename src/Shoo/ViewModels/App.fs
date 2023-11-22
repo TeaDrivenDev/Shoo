@@ -12,6 +12,7 @@ open Elmish.Avalonia
 open Shoo
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
+open DynamicData
 
 type MoveFileStatus = Waiting | Moving | Complete | Failed
 
@@ -73,7 +74,7 @@ module App =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            FileQueue: Map<string, File>
+            FileQueue: SourceCache<File, string>
         }
 
     type Message =
@@ -97,7 +98,7 @@ module App =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
-            FileQueue = Map.empty
+            FileQueue = new SourceCache<File, string>(fun f -> f.FullName)
         }
         |> withoutCommand
 
@@ -170,22 +171,15 @@ module App =
         | QueueFileCopy path ->
             let file = mkFile path
             let operation = mkCopyOperation file model.DestinationDirectory.Path
-            { model with 
-                FileQueue = model.FileQueue.Add(file.FullName, file) 
-            }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
+            model.FileQueue.AddOrUpdate(file) 
+            model, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
         | UpdateFileStatus (file, progress, moveFileStatus) ->
             let updatedFile = { file with Progress = progress; Status = moveFileStatus }
-            { model with 
-                FileQueue = 
-                    model.FileQueue 
-                    |> Map.toSeq
-                    |> Seq.map (fun (fullName, file) -> fullName, if fullName = updatedFile.FullName then updatedFile else file)
-                    |> Map.ofSeq
-            } |> withoutCommand
+            model.FileQueue.AddOrUpdate(updatedFile)
+            model |> withoutCommand
         | RemoveFile file ->
-            { model with 
-                FileQueue = model.FileQueue.Remove file.FullName
-            } |> withoutCommand
+            model.FileQueue.RemoveKey file.FullName
+            model |> withoutCommand
 
     let subscriptions (model: Model) : Sub<Message> =
 

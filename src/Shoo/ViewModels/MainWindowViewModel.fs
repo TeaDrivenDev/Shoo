@@ -5,32 +5,18 @@ open Shoo
 open TeaDrivenDev.Prelude.IO
 open App
 open System.Collections.ObjectModel
+open Avalonia.ReactiveUI
+open ReactiveUI
+open DynamicData
+open System
 
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
-
-    let _fileQueue = ObservableCollection<File>()
-
-    // Sync model FileQueue with the VM FileQueue ObservableCollection.
-    do  this.Subscribe(
-            store.Observable |> Observable.map (fun m -> m.FileQueue), 
-            fun fileQueueMap ->
-                _fileQueue // Remove files from ObservableCollection
-                |> Seq.filter (fun f -> not (fileQueueMap.ContainsKey f.FullName))
-                |> Seq.iter (fun f -> _fileQueue.Remove(f) |> ignore)
-                    
-                fileQueueMap // Add or update files in ObservableCollection
-                |> Map.toSeq
-                |> Seq.sortBy (fun (_, file) -> file.FullName)
-                |> Seq.iter (fun (_, file) -> 
-                    if _fileQueue |> Seq.exists (fun f -> f.FullName = file.FullName) then
-                        let index = this.FileQueue |> Seq.findIndex (fun f -> f.FullName = file.FullName)
-                        _fileQueue[index] <- file
-                    else
-                        _fileQueue.Add(file)
-                )
-            )
-
+    
+    let mutable _fileQueue = Unchecked.defaultof<_>
+    do store.Model.FileQueue.Connect().Bind(&_fileQueue).Subscribe() |> this.AddDisposable
+    
+    
     member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
     member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
     member this.IsSourceDirectoryValid = this.Bind(store, _.SourceDirectory.PathExists)
