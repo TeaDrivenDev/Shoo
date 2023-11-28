@@ -172,10 +172,8 @@
                                         Content="Remove"
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                            ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" 
-										/>
-								
-								
+                                                            ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" />
+
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
                                         Command="{Binding $parent[Window].DataContext.Retry}"

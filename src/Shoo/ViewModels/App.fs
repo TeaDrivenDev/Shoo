@@ -1,22 +1,20 @@
 ﻿namespace Shoo.ViewModels
 
 open System
-open System.Collections.ObjectModel
 open System.IO
 
-open FSharp.Control.Reactive
-
+open DynamicData
 open Elmish
-open Elmish.Avalonia
+open FSharp.Control.Reactive
+open ReactiveElmish
+open ReactiveElmish.Avalonia
 
-open Shoo
 open TeaDrivenDev.Prelude
 open TeaDrivenDev.Prelude.IO
-open DynamicData
 
 type MoveFileStatus = Waiting | Moving | Complete | Failed
 
-module App = 
+module App =
 
     [<Literal>]
     let shooFileNameExtension = ".__shoo__"
@@ -24,10 +22,9 @@ module App =
     [<Literal>]
     let bufferSize = 1024 * 1024
 
-
     type CreateMode = Create | Replace
 
-    type File = 
+    type File =
         {
             FullName: string
             FileName: string
@@ -37,7 +34,7 @@ module App =
             Status: MoveFileStatus
         }
 
-    let mkFile (path: string) = 
+    let mkFile (path: string) =
         let fileInfo = FileInfo path
         {
             FullName = fileInfo.FullName
@@ -55,11 +52,13 @@ module App =
             Extension: string
             File: File
         }
-    
+
     let mkCopyOperation (file: File) destinationDirectory =
         let source = file.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
-        let destination = Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
+        let destination =
+            Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
+
         {
             Source = source
             Destination = destination
@@ -153,16 +152,13 @@ module App =
         | UpdateSourceDirectory value ->
             value
             |> Option.map
-                (fun path ->
-                    {
-                        model with
-                            SourceDirectory = createConfiguredDirectory path
-                    })
+                (fun path -> { model with SourceDirectory = createConfiguredDirectory path })
             |> Option.defaultValue model
             |> withoutCommand
         | UpdateDestinationDirectory value ->
             value
-            |> Option.map (fun path -> { model with DestinationDirectory = createConfiguredDirectory path})
+            |> Option.map
+                (fun path -> { model with DestinationDirectory = createConfiguredDirectory path})
             |> Option.defaultValue model
             |> withoutCommand
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
@@ -171,16 +167,16 @@ module App =
         | QueueFileCopy path ->
             let file = mkFile path
             let operation = mkCopyOperation file model.DestinationDirectory.Path
-            { model with 
+            { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
             }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
         | UpdateFileStatus (file, progress, moveFileStatus) ->
             let updatedFile = { file with Progress = progress; Status = moveFileStatus }
-            { model with 
+            { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile
             } |> withoutCommand
         | RemoveFile file ->
-            { model with 
+            { model with
                 FileQueue = model.FileQueue |> SourceCache.removeKey file.FullName
             } |> withoutCommand
 

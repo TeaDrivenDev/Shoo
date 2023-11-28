@@ -2,8 +2,8 @@ namespace Shoo
 
 open Avalonia
 open Avalonia.Controls
-open Avalonia.Markup.Xaml
 open Avalonia.Controls.ApplicationLifetimes
+open Avalonia.Markup.Xaml
 
 type App() =
     inherit Application()

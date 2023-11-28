@@ -2,7 +2,7 @@
 
 open Microsoft.Extensions.DependencyInjection
 
-open Elmish.Avalonia
+open ReactiveElmish.Avalonia
 
 open Shoo.ViewModels
 open Shoo.Views
@@ -13,6 +13,7 @@ type AppCompositionRoot() =
     let mainView = MainWindowView()
 
     override this.RegisterServices(services) =
+        base.RegisterServices services |> ignore
         services.AddSingleton<Services.FolderPickerService>(Services.FolderPickerService(mainView))
 
     override this.RegisterViews() =

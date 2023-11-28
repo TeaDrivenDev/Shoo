@@ -1,13 +1,16 @@
 ﻿namespace Shoo.ViewModels
 
-open Elmish.Avalonia
-open Shoo
+open ReactiveElmish
+
 open TeaDrivenDev.Prelude.IO
+
+open Shoo
+
 open App
 
-type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
+type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     inherit ReactiveElmishViewModel()
-    
+
     member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
     member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
     member this.IsSourceDirectoryValid = this.Bind(store, _.SourceDirectory.PathExists)
@@ -41,12 +44,11 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
             return store.Dispatch(UpdateDestinationDirectory path)
         }
 
-    member this.Remove(file: obj)  = 
+    member this.Remove(file: obj)  =
         file |> unbox |> RemoveFile |> store.Dispatch
 
-
-    member this.Retry(file: obj) = 
+    member this.Retry(file: obj) =
         printfn "Retrying" // TODO: Implement
 
-    static member DesignVM = 
+    static member DesignVM =
         new MainWindowViewModel(Design.stub)
