@@ -75,8 +75,5 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     member this.Remove(file: obj)  =
         file |> unbox |> RemoveFile |> store.Dispatch
 
-    member this.Retry(file: obj) =
-        printfn "Retrying" // TODO: Implement
-
     static member DesignVM =
         new MainWindowViewModel(Design.stub)

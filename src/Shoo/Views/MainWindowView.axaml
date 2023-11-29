@@ -173,15 +173,6 @@
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
                                                             ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" />
-
-                                <Button Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        Command="{Binding $parent[Window].DataContext.Retry}"
-                                        CommandParameter="{Binding .}"
-                                        Content="Retry"
-                                        IsVisible="{Binding Status,
-                                                            Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                            ConverterParameter={x:Static vm:MoveFileStatus.Failed}}" />
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
