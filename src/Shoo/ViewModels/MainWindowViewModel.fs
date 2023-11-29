@@ -32,9 +32,8 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
 
     do
         store.Model.FileQueue.Connect()
-            .Sort(Comparer.Create(fun x y -> DateTime.Compare(x.Time, y.Time)))
-            .Select(fun x -> x :> IChangeSet<_, _>)
             .Transform(fun file -> new FileViewModel(file))
+            .Sort(Comparer.Create(fun (x: FileViewModel) y -> DateTime.Compare(x.Time, y.Time)))
             .Bind(&fileQueue)
             .Subscribe()
         |> ignore
