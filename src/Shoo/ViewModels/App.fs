@@ -84,7 +84,7 @@ module App =
         | ChangeActive of bool
         | QueueFileCopy of string
         | UpdateFileStatus of (File * int * MoveFileStatus)
-        | RemoveFile of File
+        | RemoveFile of string
         | Terminate
 
     let init () =
@@ -175,9 +175,9 @@ module App =
             { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile
             } |> withoutCommand
-        | RemoveFile file ->
+        | RemoveFile fileFullName ->
             { model with
-                FileQueue = model.FileQueue |> SourceCache.removeKey file.FullName
+                FileQueue = model.FileQueue |> SourceCache.removeKey fileFullName
             } |> withoutCommand
         | Terminate -> model |> withoutCommand
 

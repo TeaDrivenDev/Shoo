@@ -23,6 +23,8 @@ type FileViewModel(file: File) =
     member this.Progress = file.Progress
     member this.Status = file.Status
 
+    member this.RemoveFile() = store.Dispatch (RemoveFile this.FullName)
+
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     inherit ReactiveElmishViewModel()
 
