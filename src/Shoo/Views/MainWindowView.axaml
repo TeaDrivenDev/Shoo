@@ -10,6 +10,7 @@
         d:DesignHeight="450"
         d:DesignWidth="800"
         x:DataType="vm:MainWindowViewModel"
+		x:CompileBindings="False"
         Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.DesignVM}}"
         Icon="/Assets/avalonia-logo.ico"
         mc:Ignorable="d">
@@ -163,17 +164,23 @@
                                                                       ConverterParameter={x:Static vm:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
                                              Value="{Binding Progress}" />
+
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        Command="{Binding Remove}"
+                                        Command="{Binding $parent[Window].DataContext.Remove}"
+										CommandParameter="{Binding .}"
                                         Content="Remove"
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                            ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" />
+                                                            ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" 
+										/>
+								
+								
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
-                                        Command="{Binding Retry}"
-                                        Content="Remove"
+                                        Command="{Binding $parent[Window].DataContext.Retry}"
+										CommandParameter="{Binding .}"
+                                        Content="Retry"
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
                                                             ConverterParameter={x:Static vm:MoveFileStatus.Failed}}" />

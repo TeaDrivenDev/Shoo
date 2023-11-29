@@ -6,8 +6,6 @@ open System.IO
 open Elmish
 open Elmish.Avalonia
 
-type MoveFileStatus = Waiting | Moving | Complete | Failed
-
 module private FileOperation =
     type Model =
         {
@@ -46,9 +44,7 @@ type FileOperationExternalMessage =
 
 open FileOperation
 
-type FileOperationViewModel(
-    path: string,
-    externalDispatch: FileOperationExternalMessage -> FileOperationViewModel -> unit) =
+type FileOperationViewModel(path: string) =
     inherit ReactiveElmishViewModel()
 
     let store =
@@ -70,9 +66,5 @@ type FileOperationViewModel(
         with get () = this.Bind(store, _.Status)
         and set value = store.Dispatch (UpdateStatus value)
 
-    member this.Remove() = (Remove, this) ||> externalDispatch
-
-    member this.Retry() = (Retry, this) ||> externalDispatch
-
     static member DesignVM =
-        new FileOperationViewModel(@"c:\hiberfil.sys", (fun _ _ -> ()), Progress = 12, Status = Failed)
+        new FileOperationViewModel(@"c:\hiberfil.sys", Progress = 12, Status = Failed)
