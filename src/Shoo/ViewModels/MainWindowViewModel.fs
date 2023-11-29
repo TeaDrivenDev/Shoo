@@ -1,5 +1,10 @@
 ﻿namespace Shoo.ViewModels
 
+open System
+open System.Collections.Generic
+open System.Reactive.Linq
+
+open DynamicData
 open ReactiveElmish
 
 open TeaDrivenDev.Prelude.IO
@@ -8,8 +13,31 @@ open Shoo
 
 open App
 
+type FileViewModel(file: File) =
+    inherit ReactiveElmishViewModel()
+
+    member this.FullName = file.FullName
+    member this.FileName = file.FileName
+    member this.FileSize = file.FileSize
+    member this.Time = file.Time
+    member this.Progress = file.Progress
+    member this.Status = file.Status
+
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     inherit ReactiveElmishViewModel()
+
+    let mutable fileQueue = Unchecked.defaultof<_>
+
+    let createFileViewModel (file: File) = new FileViewModel(file)
+
+    do
+        store.Model.FileQueue.Connect()
+            .Sort(Comparer.Create(fun x y -> DateTime.Compare(x.Time, y.Time)))
+            .Select(fun x -> x :> IChangeSet<_, _>)
+            .Transform(fun file -> new FileViewModel(file))
+            .Bind(&fileQueue)
+            .Subscribe()
+        |> ignore
 
     member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
     member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
@@ -30,7 +58,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
         with get () = this.Bind(store, _.IsActive)
         and set value = store.Dispatch(ChangeActive value)
 
-    member this.FileQueue = this.BindSourceCache(store, _.FileQueue)
+    member this.FileQueue = fileQueue
 
     member this.SelectSourceDirectory() =
         task {

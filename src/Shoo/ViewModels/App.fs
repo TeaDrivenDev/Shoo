@@ -36,6 +36,7 @@ module App =
 
     let mkFile (path: string) =
         let fileInfo = FileInfo path
+
         {
             FullName = fileInfo.FullName
             FileName = fileInfo.Name
@@ -81,10 +82,10 @@ module App =
         | UpdateDestinationDirectory of string option
         | UpdateFileTypes of string
         | ChangeActive of bool
-        | Terminate
         | QueueFileCopy of string
         | UpdateFileStatus of (File * int * MoveFileStatus)
         | RemoveFile of File
+        | Terminate
 
     let init () =
         {
@@ -163,7 +164,6 @@ module App =
             |> withoutCommand
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
-        | Terminate -> model |> withoutCommand
         | QueueFileCopy path ->
             let file = mkFile path
             let operation = mkCopyOperation file model.DestinationDirectory.Path
@@ -179,6 +179,7 @@ module App =
             { model with
                 FileQueue = model.FileQueue |> SourceCache.removeKey file.FullName
             } |> withoutCommand
+        | Terminate -> model |> withoutCommand
 
     let subscriptions (model: Model) : Sub<Message> =
 

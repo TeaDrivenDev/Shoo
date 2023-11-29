@@ -9,8 +9,8 @@
         Width="800"
         d:DesignHeight="450"
         d:DesignWidth="800"
+        x:CompileBindings="False"
         x:DataType="vm:MainWindowViewModel"
-		x:CompileBindings="False"
         Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.DesignVM}}"
         Icon="/Assets/avalonia-logo.ico"
         mc:Ignorable="d">
@@ -168,7 +168,7 @@
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
                                         Command="{Binding $parent[Window].DataContext.Remove}"
-										CommandParameter="{Binding .}"
+                                        CommandParameter="{Binding .}"
                                         Content="Remove"
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
@@ -177,7 +177,7 @@
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"
                                         Command="{Binding $parent[Window].DataContext.Retry}"
-										CommandParameter="{Binding .}"
+                                        CommandParameter="{Binding .}"
                                         Content="Retry"
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
