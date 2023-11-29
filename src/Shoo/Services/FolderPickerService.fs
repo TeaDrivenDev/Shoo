@@ -1,7 +1,5 @@
 namespace Shoo.Services
 
-open System
-
 open Avalonia.Controls
 open Avalonia.Platform.Storage
 
@@ -16,12 +14,5 @@ type FolderPickerService(mainWindow: Window) =
             return
                 files
                 |> Seq.tryHead
-                |> Option.map
-                    (fun file ->
-                        let uri =
-                            file.Path.AbsolutePath
-                            |> System.Net.WebUtility.UrlDecode
-                            |> Uri
-
-                        uri.AbsolutePath)
+                |> Option.map _.Path.LocalPath
         }
