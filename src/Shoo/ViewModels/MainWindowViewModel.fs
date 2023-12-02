@@ -43,8 +43,17 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     let createFileViewModel (file: App.File) = new FileViewModel(file)
 
     // TODO Report progress
-    // TODO Deduplicate error handling for Bytes and Finish
     let writeActor =
+        let validateCurrentState state name messagePrefix =
+            state
+            |> Option.map
+                (fun (copyOperation, stream) ->
+                    if name = copyOperation.Destination
+                    then (copyOperation, stream)
+                    else failwithf "%s, but active stream is %s" (sprintf messagePrefix name) copyOperation.Destination)
+            |> Option.defaultWith
+                (fun () -> failwithf "%s, but no stream is active" (sprintf messagePrefix name))
+
         MailboxProcessor<_>.Start(
             fun inbox ->
                 let rec loop state =
@@ -74,29 +83,15 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
 
                         | Bytes bytes ->
                             let copyOperation, stream =
-                                state
-                                |> Option.map
-                                    (fun (copyOperation, stream) ->
-                                        if bytes.FileName = copyOperation.Destination
-                                        then (copyOperation, stream)
-                                        else failwithf "Received bytes for %s, but active stream is %s" bytes.FileName copyOperation.Destination)
-                                |> Option.defaultWith
-                                    (fun () -> failwithf "Received bytes for %s, but no stream is active" bytes.FileName)
+                                validateCurrentState state bytes.FileName "Received bytes for %s"
 
                             do! stream.WriteAsync(bytes.Bytes).AsTask() |> Async.AwaitTask
 
                             return! loop (Some (copyOperation, stream))
 
                         | Finish fileName ->
-                            let (copyOperation, stream) =
-                                state
-                                |> Option.map
-                                    (fun (copyOperation, stream) ->
-                                        if copyOperation.Destination = fileName
-                                        then (copyOperation, stream)
-                                        else failwithf "Trying to finish %s, but active stream is %s" fileName copyOperation.Destination)
-                                |> Option.defaultWith
-                                    (fun () -> failwithf "Trying to finish %s, but no stream is active" fileName)
+                            let copyOperation, stream =
+                                validateCurrentState state fileName "Trying to finish %s"
 
                             // TODO Rename file
 
