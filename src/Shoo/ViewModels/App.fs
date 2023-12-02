@@ -52,6 +52,7 @@ module App =
         {
             Source: string
             FileSize: int64
+            Time: DateTime
             Destination: string
             Extension: string
             File: File
@@ -66,6 +67,7 @@ module App =
         {
             Source = source
             FileSize = file.FileSize
+            Time = file.Time
             Destination = destination
             Extension = Path.GetExtension source
             File = file
@@ -106,52 +108,6 @@ module App =
         }
         |> withoutCommand
 
-    let getSafeDestinationFileName (filePath: string) extension =
-        let directory = Path.GetDirectoryName filePath
-        let fileName = Path.GetFileNameWithoutExtension filePath
-
-        let rec getFileName count =
-            let name =
-                match count with
-                | 1 -> fileName + extension
-                | _ -> sprintf "%s (%i)%s" fileName count extension
-                |> asSnd directory
-                |> Path.Combine
-
-            let file = FileInfo name
-
-            if file.Exists
-            then
-                if file.Length = 0L
-                then name, Replace
-                else getFileName (count + 1)
-            else name, Create
-
-        getFileName 1
-
-    let copyFile copyOperation =
-        File.Copy(copyOperation.Source, copyOperation.Destination)
-
-        let time = (FileInfo copyOperation.Source).LastWriteTimeUtc
-
-        File.SetLastWriteTimeUtc(copyOperation.Destination, time)
-        let finalDestination, createMode =
-            getSafeDestinationFileName copyOperation.Destination copyOperation.Extension
-
-        if createMode = Replace
-        then File.Delete finalDestination
-
-        File.Move(copyOperation.Destination, finalDestination)
-
-        let moveStatus =
-            if FileInfo(finalDestination).Length > 0L
-            then
-                File.Delete copyOperation.Source
-                Complete
-            else Failed
-
-        copyOperation.File, 100, moveStatus
-
     let update message model =
         match message with
         | UpdateSourceDirectory value ->
@@ -170,10 +126,9 @@ module App =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | QueueFileCopy path ->
             let file = mkFile path model.DestinationDirectory.Path
-            let operation = mkCopyOperation file
             { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
-            }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
+            } |> withoutCommand
         | UpdateFileStatus (file, progress, moveFileStatus) ->
             let updatedFile = { file with Progress = progress; Status = moveFileStatus }
             { model with

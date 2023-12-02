@@ -29,6 +29,7 @@ type FileViewModel(file: File) =
     member this.RemoveFile() = store.Dispatch (RemoveFile this.FullName)
 
 open System.IO
+open TeaDrivenDev.Prelude
 
 type WriteActorMessage =
     | Start of CopyOperation
@@ -53,6 +54,29 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
                     else failwithf "%s, but active stream is %s" (sprintf messagePrefix name) copyOperation.Destination)
             |> Option.defaultWith
                 (fun () -> failwithf "%s, but no stream is active" (sprintf messagePrefix name))
+
+        let getSafeDestinationFileName (filePath: string) extension =
+            let directory = Path.GetDirectoryName filePath
+            let fileName = Path.GetFileNameWithoutExtension filePath
+
+            let rec getFileName count =
+                let name =
+                    match count with
+                    | 1 -> fileName + extension
+                    | _ -> sprintf "%s (%i)%s" fileName count extension
+                    |> asSnd directory
+                    |> Path.Combine
+
+                let file = FileInfo name
+
+                if file.Exists
+                then
+                    if file.Length = 0L
+                    then name, Replace
+                    else getFileName (count + 1)
+                else name, Create
+
+            getFileName 1
 
         MailboxProcessor<_>.Start(
             fun inbox ->
@@ -93,10 +117,24 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
                             let copyOperation, stream =
                                 validateCurrentState state fileName "Trying to finish %s"
 
-                            // TODO Rename file
-
                             stream.Close()
                             stream.Dispose()
+
+                            File.SetLastWriteTimeUtc(copyOperation.Destination, copyOperation.Time)
+                            let finalDestination, createMode =
+                                getSafeDestinationFileName copyOperation.Destination copyOperation.Extension
+
+                            if createMode = Replace
+                            then File.Delete finalDestination
+
+                            File.Move(copyOperation.Destination, finalDestination)
+
+                            let moveStatus =
+                                if FileInfo(finalDestination).Length > 0L
+                                then
+                                    File.Delete copyOperation.Source
+                                    Complete
+                                else Failed
 
                             return! loop None
                     }
