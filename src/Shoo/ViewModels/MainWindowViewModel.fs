@@ -84,59 +84,61 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
                     async {
                         let! message = inbox.Receive()
 
-                        match message with
-                        | Start copyOperation ->
-                            let fileStream =
-                                state
-                                |> Option.map
-                                    (fun (copyOperation, stream) ->
-                                        failwithf "Starting new file although %s was not finished" copyOperation.Destination)
-                                |> Option.defaultWith
-                                    (fun () ->
-                                        new FileStream(
-                                            copyOperation.Source,
-                                            FileStreamOptions(
-                                                Access = FileAccess.Write,
-                                                BufferSize = bufferSize,
-                                                Mode = FileMode.CreateNew,
-                                                Options = FileOptions.Asynchronous,
-                                                PreallocationSize = copyOperation.FileSize,
-                                                Share = FileShare.None)))
+                        try
+                            match message with
+                            | Start copyOperation ->
+                                let fileStream =
+                                    state
+                                    |> Option.map
+                                        (fun (copyOperation, stream) ->
+                                            failwithf "Starting new file although %s was not finished" copyOperation.Destination)
+                                    |> Option.defaultWith
+                                        (fun () ->
+                                            new FileStream(
+                                                copyOperation.Source,
+                                                FileStreamOptions(
+                                                    Access = FileAccess.Write,
+                                                    BufferSize = bufferSize,
+                                                    Mode = FileMode.CreateNew,
+                                                    Options = FileOptions.Asynchronous,
+                                                    PreallocationSize = copyOperation.FileSize,
+                                                    Share = FileShare.None)))
 
-                            return! loop (Some (copyOperation, fileStream))
+                                return! loop (Some (copyOperation, fileStream))
 
-                        | Bytes bytes ->
-                            let copyOperation, stream =
-                                validateCurrentState state bytes.FileName "Received bytes for %s"
+                            | Bytes bytes ->
+                                let copyOperation, stream =
+                                    validateCurrentState state bytes.FileName "Received bytes for %s"
 
-                            do! stream.WriteAsync(bytes.Bytes).AsTask() |> Async.AwaitTask
+                                do! stream.WriteAsync(bytes.Bytes).AsTask() |> Async.AwaitTask
 
-                            return! loop (Some (copyOperation, stream))
+                                return! loop (Some (copyOperation, stream))
 
-                        | Finish fileName ->
-                            let copyOperation, stream =
-                                validateCurrentState state fileName "Trying to finish %s"
+                            | Finish fileName ->
+                                let copyOperation, stream =
+                                    validateCurrentState state fileName "Trying to finish %s"
 
-                            stream.Close()
-                            stream.Dispose()
+                                stream.Close()
+                                stream.Dispose()
 
-                            File.SetLastWriteTimeUtc(copyOperation.Destination, copyOperation.Time)
-                            let finalDestination, createMode =
-                                getSafeDestinationFileName copyOperation.Destination copyOperation.Extension
+                                File.SetLastWriteTimeUtc(copyOperation.Destination, copyOperation.Time)
+                                let finalDestination, createMode =
+                                    getSafeDestinationFileName copyOperation.Destination copyOperation.Extension
 
-                            if createMode = Replace
-                            then File.Delete finalDestination
+                                if createMode = Replace
+                                then File.Delete finalDestination
 
-                            File.Move(copyOperation.Destination, finalDestination)
+                                File.Move(copyOperation.Destination, finalDestination)
 
-                            let moveStatus =
-                                if FileInfo(finalDestination).Length > 0L
-                                then
-                                    File.Delete copyOperation.Source
-                                    Complete
-                                else Failed
+                                let moveStatus =
+                                    if FileInfo(finalDestination).Length > 0L
+                                    then
+                                        File.Delete copyOperation.Source
+                                        Complete
+                                    else Failed
 
-                            return! loop None
+                                return! loop None
+                        with _ -> return! loop None
                     }
 
                 loop None)
