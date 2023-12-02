@@ -12,9 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Prelude.fs" />
     <Compile Include="Services\FolderPickerService.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="ViewModels\App.fs" />
+    <Compile Include="CopyFileEngine.fs" />
     <Compile Include="ViewModels\MainWindowViewModel.fs" />
     <Compile Include="Views\MainWindowView.axaml.fs" />
     <Compile Include="UIUtilities.fs" />

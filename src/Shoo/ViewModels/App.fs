@@ -12,9 +12,6 @@ open ReactiveElmish.Avalonia
 open Shoo.Domain
 
 module App =
-    let asFst second first = first, second
-    let asSnd first second = first, second
-
     let withoutCommand model = model, Cmd.none
 
     let createConfiguredDirectory path =
