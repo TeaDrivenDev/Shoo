@@ -28,18 +28,20 @@ module App =
         {
             FullName: string
             FileName: string
+            DestinationDirectory: string
             Time: DateTime
             FileSize: int64
             Progress: int
             Status: MoveFileStatus
         }
 
-    let mkFile (path: string) =
+    let mkFile (path: string) destinationDirectory =
         let fileInfo = FileInfo path
 
         {
             FullName = fileInfo.FullName
             FileName = fileInfo.Name
+            DestinationDirectory = destinationDirectory
             Time = fileInfo.LastWriteTime
             FileSize = fileInfo.Length
             Progress = 0
@@ -49,19 +51,21 @@ module App =
     type CopyOperation =
         {
             Source: string
+            FileSize: int64
             Destination: string
             Extension: string
             File: File
         }
 
-    let mkCopyOperation (file: File) destinationDirectory =
+    let mkCopyOperation (file: File) =
         let source = file.FullName
         let destinationFileName = Path.GetFileNameWithoutExtension source
         let destination =
-            Path.Combine(destinationDirectory, destinationFileName + shooFileNameExtension)
+            Path.Combine(file.DestinationDirectory, destinationFileName + shooFileNameExtension)
 
         {
             Source = source
+            FileSize = file.FileSize
             Destination = destination
             Extension = Path.GetExtension source
             File = file
@@ -165,8 +169,8 @@ module App =
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | QueueFileCopy path ->
-            let file = mkFile path
-            let operation = mkCopyOperation file model.DestinationDirectory.Path
+            let file = mkFile path model.DestinationDirectory.Path
+            let operation = mkCopyOperation file
             { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
             }, Cmd.OfFunc.perform copyFile operation UpdateFileStatus
