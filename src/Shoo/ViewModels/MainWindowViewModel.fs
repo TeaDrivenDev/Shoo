@@ -252,8 +252,6 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
             return store.Dispatch(UpdateDestinationDirectory path)
         }
 
-    member this.Remove(file: obj)  =
-        file |> unbox |> RemoveFile |> store.Dispatch
 
     static member DesignVM =
         new MainWindowViewModel(Design.stub)
