@@ -2,6 +2,7 @@
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:domain="using:Shoo.Domain"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:uiUtilities="using:Shoo.UIUtilities"
         xmlns:vm="using:Shoo.ViewModels"
@@ -157,10 +158,10 @@
                                              VerticalAlignment="Center"
                                              Classes.Completed="{Binding Status,
                                                                          Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                                         ConverterParameter={x:Static vm:MoveFileStatus.Complete}}"
+                                                                         ConverterParameter={x:Static domain:MoveFileStatus.Complete}}"
                                              Classes.Failed="{Binding Path=Status,
                                                                       Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                                      ConverterParameter={x:Static vm:MoveFileStatus.Failed}}"
+                                                                      ConverterParameter={x:Static domain:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
                                              Value="{Binding Progress}" />
 
@@ -170,7 +171,7 @@
                                         Content="Remove"
                                         IsVisible="{Binding Status,
                                                             Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                            ConverterParameter={x:Static vm:MoveFileStatus.Complete}}" />
+                                                            ConverterParameter={x:Static domain:MoveFileStatus.Complete}}" />
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

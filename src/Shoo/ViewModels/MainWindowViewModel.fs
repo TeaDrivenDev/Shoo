@@ -10,9 +10,8 @@ open FSharp.Control.Reactive
 
 open ReactiveElmish
 
-open TeaDrivenDev.Prelude.IO
-
 open Shoo
+open Shoo.Domain
 
 open App
 
@@ -29,7 +28,6 @@ type FileViewModel(file: File) =
     member this.RemoveFile() = store.Dispatch (RemoveFile this.FullName)
 
 open System.IO
-open TeaDrivenDev.Prelude
 
 type WriteActorMessage =
     | Start of CopyOperation
@@ -41,7 +39,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
 
     let mutable fileQueue = Unchecked.defaultof<_>
 
-    let createFileViewModel (file: App.File) = new FileViewModel(file)
+    let createFileViewModel (file: Shoo.Domain.File) = new FileViewModel(file)
 
     // TODO Report progress
     let writeActor =
@@ -98,7 +96,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
                                                 copyOperation.Source,
                                                 FileStreamOptions(
                                                     Access = FileAccess.Write,
-                                                    BufferSize = bufferSize,
+                                                    BufferSize = Constants.BufferSize,
                                                     Mode = FileMode.CreateNew,
                                                     Options = FileOptions.Asynchronous,
                                                     PreallocationSize = copyOperation.FileSize,
@@ -155,7 +153,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
                                 message.Source,
                                 FileStreamOptions(
                                     Access = FileAccess.Read,
-                                    BufferSize = bufferSize,
+                                    BufferSize = Constants.BufferSize,
                                     Mode = FileMode.Open,
                                     Options =
                                         (FileOptions.Asynchronous ||| FileOptions.SequentialScan),
@@ -175,14 +173,14 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
                                     writeActor.Post
                                         (Bytes {| FileName = message.Destination; Bytes = buffer |})
 
-                                    let buffer = (Array.zeroCreate bufferSize).AsMemory()
+                                    let buffer = (Array.zeroCreate Constants.BufferSize).AsMemory()
                                     let! bytesRead =
                                         fileStream.ReadAsync(buffer).AsTask() |> Async.AwaitTask
 
                                     return! innerLoop (bytesRead, buffer)
                             }
 
-                        let buffer = (Array.zeroCreate bufferSize).AsMemory()
+                        let buffer = (Array.zeroCreate Constants.BufferSize).AsMemory()
                         let! bytesRead =
                             fileStream.ReadAsync(buffer).AsTask() |> Async.AwaitTask
 

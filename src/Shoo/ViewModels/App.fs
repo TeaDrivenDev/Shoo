@@ -9,30 +9,35 @@ open FSharp.Control.Reactive
 open ReactiveElmish
 open ReactiveElmish.Avalonia
 
-open TeaDrivenDev.Prelude
-open TeaDrivenDev.Prelude.IO
-
-type MoveFileStatus = Waiting | Moving | Complete | Failed
+open Shoo.Domain
 
 module App =
+    let asFst second first = first, second
+    let asSnd first second = first, second
 
-    [<Literal>]
-    let shooFileNameExtension = ".__shoo__"
+    let withoutCommand model = model, Cmd.none
 
-    [<Literal>]
-    let bufferSize = 1024 * 1024
-
-    type CreateMode = Create | Replace
-
-    type File =
+    let createConfiguredDirectory path =
         {
-            FullName: string
-            FileName: string
-            DestinationDirectory: string
-            Time: DateTime
-            FileSize: int64
-            Progress: int
-            Status: MoveFileStatus
+            Path = path
+            PathExists = not <| String.IsNullOrWhiteSpace path && Directory.Exists path
+        }
+
+    let mkCopyOperation (file: File) =
+        let source = file.FullName
+        let destinationFileName = Path.GetFileNameWithoutExtension source
+        let destination =
+            Path.Combine(
+                file.DestinationDirectory,
+                destinationFileName + Constants.ShooFileNameExtension)
+
+        {
+            Source = source
+            FileSize = file.FileSize
+            Time = file.Time
+            Destination = destination
+            Extension = Path.GetExtension source
+            File = file
         }
 
     let mkFile (path: string) destinationDirectory =
@@ -46,31 +51,6 @@ module App =
             FileSize = fileInfo.Length
             Progress = 0
             Status = Waiting
-        }
-
-    type CopyOperation =
-        {
-            Source: string
-            FileSize: int64
-            Time: DateTime
-            Destination: string
-            Extension: string
-            File: File
-        }
-
-    let mkCopyOperation (file: File) =
-        let source = file.FullName
-        let destinationFileName = Path.GetFileNameWithoutExtension source
-        let destination =
-            Path.Combine(file.DestinationDirectory, destinationFileName + shooFileNameExtension)
-
-        {
-            Source = source
-            FileSize = file.FileSize
-            Time = file.Time
-            Destination = destination
-            Extension = Path.GetExtension source
-            File = file
         }
 
     type Model =
