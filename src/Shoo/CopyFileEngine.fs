@@ -11,6 +11,8 @@ module CopyFileEngine =
     type ICopyFileEngine =
         abstract member Queue: copyOperation: CopyOperation -> unit
 
+        inherit IDisposable
+
     type private WriteActorMessage =
         | Start of CopyOperation
         | Bytes of {| FileName: string; Bytes: ReadOnlyMemory<byte> |}
@@ -218,4 +220,6 @@ module CopyFileEngine =
         {
             new ICopyFileEngine with
                 member _.Queue(copyOperation: CopyOperation) = readActor.Post(copyOperation)
+
+                member _.Dispose() = readActor.Dispose(); writeActor.Dispose()
         }

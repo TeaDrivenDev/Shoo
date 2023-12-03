@@ -27,7 +27,7 @@ type FileViewModel(file: File) =
 
     member this.RemoveFile() = store.Dispatch (RemoveFile this.FullName)
 
-type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
+type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
 
     let mutable fileQueue = Unchecked.defaultof<_>
@@ -37,26 +37,25 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     do
         let progress = Progress(UpdateFileStatus >> store.Dispatch)
 
-        // TODO Dispose
         let copyEngine = CopyFileEngine.create progress
+        this.AddDisposable copyEngine
 
         let connect = store.Model.FileQueue.Connect()
 
-        // TODO Dispose
         connect
             .WhereReasonsAre(ChangeReason.Add)
             .Flatten()
             .Select(fun change -> change.Current)
         |> Observable.subscribe (mkCopyOperation >> copyEngine.Queue)
-        |> ignore
+        |> this.AddDisposable
 
-        // TODO Dispose
         connect
             .Transform(fun file -> new FileViewModel(file))
             .Sort(Comparer.Create(fun (x: FileViewModel) y -> DateTime.Compare(x.Time, y.Time)))
             .Bind(&fileQueue)
+            .DisposeMany()
             .Subscribe()
-        |> ignore
+        |> this.AddDisposable
 
     member this.SourceDirectory
         with get () = this.Bind(store, _.SourceDirectory.Path)
