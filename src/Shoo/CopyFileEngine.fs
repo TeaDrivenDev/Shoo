@@ -25,6 +25,16 @@ module CopyFileEngine =
         }
 
     let private createReadActor (writeActor: MailboxProcessor<_>) =
+        let readChunk (fileStream: Stream) =
+            async {
+                let buffer = Array.zeroCreate Constants.BufferSize
+                let! bytesRead =
+                    fileStream.ReadAsync(buffer, 0, Constants.BufferSize)
+                    |> Async.AwaitTask
+
+                return bytesRead, buffer.AsMemory(0, bytesRead)
+            }
+
         MailboxProcessor<_>.Start(
             fun inbox ->
                 let rec loop () =
@@ -56,16 +66,12 @@ module CopyFileEngine =
                                     writeActor.Post
                                         (Bytes {| FileName = message.Destination; Bytes = buffer |})
 
-                                    let buffer = (Array.zeroCreate Constants.BufferSize).AsMemory()
-                                    let! bytesRead =
-                                        fileStream.ReadAsync(buffer).AsTask() |> Async.AwaitTask
+                                    let! bytesRead, buffer = readChunk fileStream
 
                                     return! innerLoop (bytesRead, buffer)
                             }
 
-                        let buffer = (Array.zeroCreate Constants.BufferSize).AsMemory()
-                        let! bytesRead =
-                            fileStream.ReadAsync(buffer).AsTask() |> Async.AwaitTask
+                        let! bytesRead, buffer = readChunk fileStream
 
                         do! innerLoop (bytesRead, buffer)
 
