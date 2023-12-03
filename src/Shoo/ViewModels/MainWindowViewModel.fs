@@ -63,15 +63,18 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     member this.IsSourceDirectoryValid = this.Bind(store, _.SourceDirectory.PathExists)
     member this.IsDestinationDirectoryValid = this.Bind(store, _.DestinationDirectory.PathExists)
     member this.ReplacementsFileName = this.Bind(store, _.ReplacementsFileName)
+
     member this.FileTypes
         with get () = this.Bind(store, _.FileTypes)
         and set value = store.Dispatch(UpdateFileTypes value)
 
     member this.CanActivate =
-        this.Bind (store, fun m ->
-            m.SourceDirectory.PathExists
-            && m.DestinationDirectory.PathExists
-            && m.DestinationDirectory.Path <> m.SourceDirectory.Path)
+        this.Bind(
+            store,
+            fun model ->
+                model.SourceDirectory.PathExists
+                && model.DestinationDirectory.PathExists
+                && model.DestinationDirectory.Path <> model.SourceDirectory.Path)
 
     member this.IsActive
         with get () = this.Bind(store, _.IsActive)

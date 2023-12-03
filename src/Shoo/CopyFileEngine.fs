@@ -46,7 +46,6 @@ module CopyFileEngine =
                                 message.Source,
                                 FileStreamOptions(
                                     Access = FileAccess.Read,
-                                    BufferSize = Constants.BufferSize,
                                     BufferSize = Constants.ChunkSize,
                                     Mode = FileMode.Open,
                                     Options =
@@ -136,7 +135,6 @@ module CopyFileEngine =
                                                 copyOperation.Destination,
                                                 FileStreamOptions(
                                                     Access = FileAccess.Write,
-                                                    BufferSize = Constants.BufferSize,
                                                     BufferSize = Constants.ChunkSize,
                                                     Mode = FileMode.CreateNew,
                                                     Options = FileOptions.Asynchronous,

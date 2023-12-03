@@ -7,7 +7,7 @@
         xmlns:uiUtilities="using:Shoo.UIUtilities"
         xmlns:vm="using:Shoo.ViewModels"
         Title="Shoo"
-        Width="800"
+        Width="1200"
         d:DesignHeight="450"
         d:DesignWidth="800"
         x:DataType="vm:MainWindowViewModel"
