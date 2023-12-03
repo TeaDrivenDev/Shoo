@@ -67,13 +67,13 @@ module CopyFileEngine =
                 loop ())
 
     // TODO Report progress
-    let private createWriteActor () =
+    let private createWriteActor (progress: IProgress<_>) =
         let validateCurrentState state name messagePrefix =
             state
             |> Option.map
-                (fun (copyOperation, stream) ->
+                (fun (copyOperation, stream, progress) ->
                     if name = copyOperation.Destination
-                    then (copyOperation, stream)
+                    then (copyOperation, stream, progress)
                     else failwithf "%s, but active stream is %s" (sprintf messagePrefix name) copyOperation.Destination)
             |> Option.defaultWith
                 (fun () -> failwithf "%s, but no stream is active" (sprintf messagePrefix name))
@@ -113,7 +113,7 @@ module CopyFileEngine =
                                 let fileStream =
                                     state
                                     |> Option.map
-                                        (fun (copyOperation, stream) ->
+                                        (fun (copyOperation, stream, _) ->
                                             failwithf "Starting new file although %s was not finished" copyOperation.Destination)
                                     |> Option.defaultWith
                                         (fun () ->
@@ -127,18 +127,28 @@ module CopyFileEngine =
                                                     PreallocationSize = copyOperation.FileSize,
                                                     Share = FileShare.None)))
 
-                                return! loop (Some (copyOperation, fileStream))
+                                progress.Report((copyOperation.Source, 0, Waiting))
+
+                                return! loop (Some (copyOperation, fileStream, 0))
 
                             | Bytes bytes ->
-                                let copyOperation, stream =
+                                let copyOperation, stream, bytesWritten =
                                     validateCurrentState state bytes.FileName "Received bytes for %s"
 
                                 do! stream.WriteAsync(bytes.Bytes).AsTask() |> Async.AwaitTask
 
-                                return! loop (Some (copyOperation, stream))
+                                let bytesWritten = bytesWritten + bytes.Bytes.Length
+
+                                let progressPercentage =
+                                    (float bytesWritten / float copyOperation.FileSize) * 100. |> int
+                                printfn "%i - %i%%" bytesWritten progressPercentage
+
+                                progress.Report(copyOperation.Source, progressPercentage, Moving)
+
+                                return! loop (Some (copyOperation, stream, bytesWritten))
 
                             | Finish fileName ->
-                                let copyOperation, stream =
+                                let copyOperation, stream, bytesWritten =
                                     validateCurrentState state fileName "Trying to finish %s"
 
                                 stream.Close()
@@ -160,14 +170,16 @@ module CopyFileEngine =
                                         Complete
                                     else Failed
 
+                                progress.Report((copyOperation.Source, 100, moveStatus))
+
                                 return! loop None
                         with _ -> return! loop None
                     }
 
                 loop None)
 
-    let create () =
-        let writeActor = createWriteActor ()
+    let create progress =
+        let writeActor = createWriteActor progress
         let readActor = createReadActor writeActor
 
         // TODO Handle errors

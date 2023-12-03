@@ -66,7 +66,7 @@ module App =
         | UpdateFileTypes of string
         | ChangeActive of bool
         | QueueFileCopy of string
-        | UpdateFileStatus of (File * int * MoveFileStatus)
+        | UpdateFileStatus of (string * int * MoveFileStatus)
         | RemoveFile of string
         | Terminate
 
@@ -106,8 +106,10 @@ module App =
             { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
             } |> withoutCommand
-        | UpdateFileStatus (file, progress, moveFileStatus) ->
-            let updatedFile = { file with Progress = progress; Status = moveFileStatus }
+        | UpdateFileStatus (fileName, progress, moveFileStatus) ->
+            let file = model.FileQueue.Lookup fileName
+
+            let updatedFile = { file.Value with Progress = progress; Status = moveFileStatus }
             { model with
                 FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile
             } |> withoutCommand

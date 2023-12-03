@@ -35,8 +35,10 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
     let createFileViewModel (file: Shoo.Domain.File) = new FileViewModel(file)
 
     do
+        let progress = Progress(UpdateFileStatus >> store.Dispatch)
+
         // TODO Dispose
-        let copyEngine = CopyFileEngine.create ()
+        let copyEngine = CopyFileEngine.create progress
 
         let connect = store.Model.FileQueue.Connect()
 
