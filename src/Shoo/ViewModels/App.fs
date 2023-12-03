@@ -141,6 +141,11 @@ module App =
                 |> Observable.subscribe (_.FullPath >> QueueFileCopy >> dispatch)
 
             watcher.Path <- model.SourceDirectory.Path
+
+            model.FileTypes.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map (sprintf "*.%s")
+            |> Array.iter watcher.Filters.Add
+
             watcher.EnableRaisingEvents <- true
 
             Disposable.create (fun () ->
