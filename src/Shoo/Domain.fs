@@ -7,7 +7,7 @@ module Constants =
     let ShooFileNameExtension = ".__shoo__"
 
     [<Literal>]
-    let BufferSize = 1024 * 1024
+    let ChunkSize = 1024 * 1024 * 10
 
 type CreateMode = Create | Replace
 

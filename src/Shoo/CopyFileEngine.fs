@@ -27,9 +27,9 @@ module CopyFileEngine =
     let private createReadActor (writeActor: MailboxProcessor<_>) =
         let readChunk (fileStream: Stream) =
             async {
-                let buffer = Array.zeroCreate Constants.BufferSize
+                let buffer = Array.zeroCreate Constants.ChunkSize
                 let! bytesRead =
-                    fileStream.ReadAsync(buffer, 0, Constants.BufferSize)
+                    fileStream.ReadAsync(buffer, 0, Constants.ChunkSize)
                     |> Async.AwaitTask
 
                 return bytesRead, buffer.AsMemory(0, bytesRead)
@@ -47,6 +47,7 @@ module CopyFileEngine =
                                 FileStreamOptions(
                                     Access = FileAccess.Read,
                                     BufferSize = Constants.BufferSize,
+                                    BufferSize = Constants.ChunkSize,
                                     Mode = FileMode.Open,
                                     Options =
                                         (FileOptions.Asynchronous ||| FileOptions.SequentialScan),
@@ -136,6 +137,7 @@ module CopyFileEngine =
                                                 FileStreamOptions(
                                                     Access = FileAccess.Write,
                                                     BufferSize = Constants.BufferSize,
+                                                    BufferSize = Constants.ChunkSize,
                                                     Mode = FileMode.CreateNew,
                                                     Options = FileOptions.Asynchronous,
                                                     PreallocationSize = copyOperation.FileSize,
