@@ -68,6 +68,7 @@ module App =
         | QueueFileCopy of string
         | UpdateFileStatus of (string * int * MoveFileStatus)
         | RemoveFile of string
+        | ClearCompleted
         | Terminate
 
     let init () =
@@ -117,6 +118,17 @@ module App =
             { model with
                 FileQueue = model.FileQueue |> SourceCache.removeKey fileFullName
             } |> withoutCommand
+        | ClearCompleted ->
+            let completedFiles =
+                model.FileQueue.Items
+                |> Seq.filter (fun file -> file.Status = Complete)
+                |> Seq.map _.FullName
+                |> Seq.toList
+
+            model.FileQueue.RemoveKeys completedFiles
+
+            model |> withoutCommand
+
         | Terminate -> model |> withoutCommand
 
     let subscriptions (model: Model) : Sub<Message> =

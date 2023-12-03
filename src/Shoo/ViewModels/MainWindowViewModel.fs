@@ -80,6 +80,13 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
         with get () = this.Bind(store, _.IsActive)
         and set value = store.Dispatch(ChangeActive value)
 
+    member this.CanClearCompletedFiles =
+        this.Bind(
+            store,
+            fun model ->
+                model.FileQueue.Items
+                |> Seq.exists (fun file -> file.Status = Complete))
+
     member this.FileQueue = fileQueue
 
     member this.SelectSourceDirectory() =
@@ -94,6 +101,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
             return store.Dispatch(UpdateDestinationDirectory path)
         }
 
+    member this.ClearCompletedFiles () = store.Dispatch ClearCompleted
 
     static member DesignVM =
         new MainWindowViewModel(Design.stub)

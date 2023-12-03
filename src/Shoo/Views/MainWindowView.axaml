@@ -119,6 +119,14 @@
                       OffContent="Inactive"
                       OnContent="Active" />
 
+        <StackPanel Grid.Row="1"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button Command="{Binding ClearCompletedFiles}"
+                    Content="Clear Completed"
+                    IsEnabled="{Binding CanClearCompletedFiles}" />
+        </StackPanel>
+
         <DataGrid Grid.Row="2"
                   IsEnabled="{Binding IsActive}"
                   ItemsSource="{Binding FileQueue}">
