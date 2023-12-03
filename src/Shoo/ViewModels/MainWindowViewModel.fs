@@ -58,8 +58,14 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) =
             .Subscribe()
         |> ignore
 
-    member this.SourceDirectory = this.Bind(store, _.SourceDirectory.Path)
-    member this.DestinationDirectory = this.Bind(store, _.DestinationDirectory.Path)
+    member this.SourceDirectory
+        with get () = this.Bind(store, _.SourceDirectory.Path)
+        and set value = store.Dispatch(UpdateSourceDirectory (Some value))
+
+    member this.DestinationDirectory
+        with get () = this.Bind(store, _.DestinationDirectory.Path)
+        and set value = store.Dispatch(UpdateDestinationDirectory (Some value))
+
     member this.IsSourceDirectoryValid = this.Bind(store, _.SourceDirectory.PathExists)
     member this.IsDestinationDirectoryValid = this.Bind(store, _.DestinationDirectory.PathExists)
     member this.ReplacementsFileName = this.Bind(store, _.ReplacementsFileName)
