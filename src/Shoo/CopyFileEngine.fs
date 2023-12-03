@@ -16,6 +16,14 @@ module CopyFileEngine =
         | Bytes of {| FileName: string; Bytes: ReadOnlyMemory<byte> |}
         | Finish of fileName: string
 
+    type private WriteActorState =
+        {
+            CopyOperation: CopyOperation
+            FileStream: FileStream
+            BytesWritten: int64
+            StartTime: DateTime
+        }
+
     let private createReadActor (writeActor: MailboxProcessor<_>) =
         MailboxProcessor<_>.Start(
             fun inbox ->
@@ -71,10 +79,10 @@ module CopyFileEngine =
         let validateCurrentState state name messagePrefix =
             state
             |> Option.map
-                (fun (copyOperation, stream, progress) ->
-                    if name = copyOperation.Destination
-                    then (copyOperation, stream, progress)
-                    else failwithf "%s, but active stream is %s" (sprintf messagePrefix name) copyOperation.Destination)
+                (fun state ->
+                    if name = state.CopyOperation.Destination
+                    then state
+                    else failwithf "%s, but active stream is %s" (sprintf messagePrefix name) state.CopyOperation.Destination)
             |> Option.defaultWith
                 (fun () -> failwithf "%s, but no stream is active" (sprintf messagePrefix name))
 
@@ -113,7 +121,7 @@ module CopyFileEngine =
                                 let fileStream =
                                     state
                                     |> Option.map
-                                        (fun (copyOperation, stream, _) ->
+                                        (fun state ->
                                             failwithf "Starting new file although %s was not finished" copyOperation.Destination)
                                     |> Option.defaultWith
                                         (fun () ->
@@ -129,48 +137,65 @@ module CopyFileEngine =
 
                                 progress.Report((copyOperation.Source, 0, Waiting))
 
-                                return! loop (Some (copyOperation, fileStream, 0))
+                                let state =
+                                    {
+                                        CopyOperation = copyOperation
+                                        FileStream = fileStream
+                                        BytesWritten = 0L
+                                        StartTime = DateTime.Now
+                                    }
+
+                                return! loop (Some state)
 
                             | Bytes bytes ->
-                                let copyOperation, stream, bytesWritten =
+                                let state =
                                     validateCurrentState state bytes.FileName "Received bytes for %s"
 
-                                do! stream.WriteAsync(bytes.Bytes).AsTask() |> Async.AwaitTask
+                                do! state.FileStream.WriteAsync(bytes.Bytes).AsTask() |> Async.AwaitTask
 
-                                let bytesWritten = bytesWritten + bytes.Bytes.Length
+                                let bytesWritten = state.BytesWritten + int64 bytes.Bytes.Length
 
                                 let progressPercentage =
-                                    (float bytesWritten / float copyOperation.FileSize) * 100. |> int
-                                printfn "%i - %i%%" bytesWritten progressPercentage
+                                    (float bytesWritten / float state.CopyOperation.FileSize) * 100. |> int
 
-                                progress.Report(copyOperation.Source, progressPercentage, Moving)
+                                progress.Report(
+                                    state.CopyOperation.Source,
+                                    progressPercentage,
+                                    Moving)
 
-                                return! loop (Some (copyOperation, stream, bytesWritten))
+                                let newState = { state with BytesWritten = bytesWritten }
+
+                                return! loop (Some newState)
 
                             | Finish fileName ->
-                                let copyOperation, stream, bytesWritten =
+                                let state =
                                     validateCurrentState state fileName "Trying to finish %s"
 
-                                stream.Close()
-                                stream.Dispose()
+                                state.FileStream.Close()
+                                state.FileStream.Dispose()
 
-                                File.SetLastWriteTimeUtc(copyOperation.Destination, copyOperation.Time)
+                                File.SetLastWriteTimeUtc(
+                                    state.CopyOperation.Destination,
+                                    state.CopyOperation.Time)
+
                                 let finalDestination, createMode =
-                                    getSafeDestinationFileName copyOperation.Destination copyOperation.Extension
+                                    getSafeDestinationFileName
+                                        state.CopyOperation.Destination
+                                        state.CopyOperation.Extension
 
                                 if createMode = Replace
                                 then File.Delete finalDestination
 
-                                File.Move(copyOperation.Destination, finalDestination)
+                                File.Move(state.CopyOperation.Destination, finalDestination)
 
                                 let moveStatus =
-                                    if FileInfo(finalDestination).Length > 0L
+                                    if FileInfo(finalDestination).Length = state.CopyOperation.FileSize
                                     then
-                                        File.Delete copyOperation.Source
+                                        File.Delete state.CopyOperation.Source
                                         Complete
                                     else Failed
 
-                                progress.Report((copyOperation.Source, 100, moveStatus))
+                                progress.Report((state.CopyOperation.Source, 100, moveStatus))
 
                                 return! loop None
                         with _ -> return! loop None
