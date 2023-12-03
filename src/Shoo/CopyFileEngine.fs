@@ -118,7 +118,7 @@ module CopyFileEngine =
                                     |> Option.defaultWith
                                         (fun () ->
                                             new FileStream(
-                                                copyOperation.Source,
+                                                copyOperation.Destination,
                                                 FileStreamOptions(
                                                     Access = FileAccess.Write,
                                                     BufferSize = Constants.BufferSize,
