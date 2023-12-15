@@ -122,6 +122,10 @@
         <StackPanel Grid.Row="1"
                     HorizontalAlignment="Right"
                     Orientation="Horizontal">
+            <Button Command="{Binding AddRandomFile}"
+                    Content="Add" />
+            <Button Command="{Binding UpdateFile}"
+                    Content="Update" />
             <Button Command="{Binding ClearCompletedFiles}"
                     Content="Clear Completed"
                     IsEnabled="{Binding CanClearCompletedFiles}" />
@@ -171,7 +175,7 @@
                                                                       Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
                                                                       ConverterParameter={x:Static domain:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
-                                             Value="{Binding Progress}" />
+                                             Value="{Binding Progress, Priority=Animation}" />
 
                                 <Button Grid.Column="1"
                                         VerticalAlignment="Center"

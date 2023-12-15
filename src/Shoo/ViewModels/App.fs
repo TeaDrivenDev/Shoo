@@ -70,15 +70,19 @@ module App =
         | RemoveFile of string
         | ClearCompleted
         | Terminate
+        | AddRandomFile
+        | UpdateFile
 
     let init () =
         {
-            SourceDirectory =
-                Path.Combine(
-                    Environment.GetFolderPath Environment.SpecialFolder.UserProfile,
-                    "Downloads")
-                |> createConfiguredDirectory
-            DestinationDirectory = ConfiguredDirectory.Empty
+            //SourceDirectory =
+            //    Path.Combine(
+            //        Environment.GetFolderPath Environment.SpecialFolder.UserProfile,
+            //        "Downloads")
+            //    |> createConfiguredDirectory
+            //DestinationDirectory = ConfiguredDirectory.Empty
+            SourceDirectory = createConfiguredDirectory @"D:\Development\Staging\Shoo\Watching"
+            DestinationDirectory = createConfiguredDirectory @"\\dambaran\Download"
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
@@ -130,6 +134,34 @@ module App =
             model |> withoutCommand
 
         | Terminate -> model |> withoutCommand
+        | AddRandomFile ->
+            let file =
+                {
+                    FullName = DateTime.Now.ToString()
+                    FileName = DateTime.Now.ToShortDateString()
+                    DestinationDirectory = "D:\\"
+                    FileSize = 1234563934L
+                    Time = DateTime.Now
+                    Progress = 23
+                    Status = Failed
+                }
+
+            model.FileQueue.AddOrUpdate file
+
+            model |> withoutCommand
+        | UpdateFile ->
+            let file = model.FileQueue.Items |> Seq.head
+
+            let file =
+                {
+                    file with
+                        Progress = 100
+                        Status = Complete
+                }
+
+            model.FileQueue.AddOrUpdate file
+
+            model |> withoutCommand
 
     let subscriptions (model: Model) : Sub<Message> =
 

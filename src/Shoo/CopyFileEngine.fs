@@ -1,10 +1,12 @@
 ﻿namespace Shoo
 
 open System
+open System.Diagnostics
 open System.IO
 
 open Shoo.Domain
 open Shoo.Prelude
+open System.Runtime
 
 [<RequireQualifiedAccess>]
 module CopyFileEngine =
@@ -23,8 +25,14 @@ module CopyFileEngine =
             CopyOperation: CopyOperation
             FileStream: FileStream
             BytesWritten: int64
-            StartTime: DateTime
+            Stopwatch: Stopwatch
         }
+
+    //type private WriteActorFlowError
+    //    |
+
+    //type private WriteActorFlowException () =
+    //    inherit Exception()
 
     let private createReadActor (writeActor: MailboxProcessor<_>) =
         let readChunk (fileStream: Stream) =
@@ -150,8 +158,10 @@ module CopyFileEngine =
                                         CopyOperation = copyOperation
                                         FileStream = fileStream
                                         BytesWritten = 0L
-                                        StartTime = DateTime.Now
+                                        Stopwatch = Stopwatch()
                                     }
+
+                                state.Stopwatch.Start()
 
                                 return! loop (Some state)
 
@@ -172,6 +182,8 @@ module CopyFileEngine =
                                     Moving)
 
                                 let newState = { state with BytesWritten = bytesWritten }
+
+                                do! Async.Sleep 400
 
                                 return! loop (Some newState)
 
@@ -202,6 +214,13 @@ module CopyFileEngine =
                                         File.Delete state.CopyOperation.Source
                                         Complete
                                     else Failed
+
+                                state.Stopwatch.Stop()
+
+                                printfn "%A" state.Stopwatch.Elapsed
+
+                                GCSettings.LargeObjectHeapCompactionMode <- GCLargeObjectHeapCompactionMode.CompactOnce
+                                GC.Collect()
 
                                 progress.Report((state.CopyOperation.Source, 100, moveStatus))
 
