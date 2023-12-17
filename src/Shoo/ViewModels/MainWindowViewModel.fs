@@ -4,11 +4,11 @@ open System
 open System.Collections.Generic
 open System.Reactive.Linq
 
-open DynamicData
-
 open FSharp.Control.Reactive
 
+open DynamicData
 open ReactiveElmish
+open ReactiveUI
 
 open Shoo
 open Shoo.Domain
@@ -18,12 +18,23 @@ open App
 type FileViewModel(file: File) =
     inherit ReactiveElmishViewModel()
 
+    let mutable progress = file.Progress
+    let mutable status = file.Status
+
     member this.FullName = file.FullName
     member this.FileName = file.FileName
     member this.FileSize = file.FileSize
     member this.Time = file.Time
-    member this.Progress = file.Progress
-    member this.Status = file.Status
+
+    member this.Progress
+        with get () = progress
+        and set value =
+            this.RaiseAndSetIfChanged(&progress, value) |> ignore
+
+    member this.Status
+        with get () = status
+        and set value =
+            this.RaiseAndSetIfChanged(&status, value) |> ignore
 
     member this.RemoveFile() = store.Dispatch (RemoveFile this.FullName)
 
@@ -50,7 +61,11 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
         |> this.AddDisposable
 
         connect
-            .Transform(fun file -> new FileViewModel(file))
+            .TransformWithInlineUpdate(
+                (fun file -> new FileViewModel(file)),
+                (fun viewModel file ->
+                    viewModel.Progress <- file.Progress
+                    viewModel.Status <- file.Status))
             .Sort(Comparer.Create(fun (x: FileViewModel) y -> DateTime.Compare(x.Time, y.Time)))
             .Bind(&fileQueue)
             .DisposeMany()
