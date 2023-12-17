@@ -173,6 +173,8 @@ module CopyFileEngine =
 
                                 let newState = { state with BytesWritten = bytesWritten }
 
+                                do! Async.Sleep 250
+
                                 return! loop (Some newState)
 
                             | Finish fileName ->
