@@ -1,10 +1,9 @@
 namespace Shoo
 
 open Avalonia
-open Avalonia.Markup.Xaml
+open Avalonia.Controls
 open Avalonia.Controls.ApplicationLifetimes
-
-open Shoo.Views
+open Avalonia.Markup.Xaml
 
 type App() =
     inherit Application()
@@ -18,10 +17,8 @@ type App() =
     override this.OnFrameworkInitializationCompleted() =
         match this.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as desktop ->
-            let view = MainWindowView()
-            desktop.MainWindow <- view
-            Services.Init view
-            ViewModels.MainWindowViewModel.vm().StartElmishLoop(view)
+            let appRoot = AppCompositionRoot()
+            desktop.MainWindow <- appRoot.GetView<ViewModels.MainWindowViewModel>() :?> Window
         | _ ->
             // leave this here for design view re-renders
             ()

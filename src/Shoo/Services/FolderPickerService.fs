@@ -1,8 +1,4 @@
-namespace Shoo
-
-open System
-
-open Microsoft.Extensions.DependencyInjection
+namespace Shoo.Services
 
 open Avalonia.Controls
 open Avalonia.Platform.Storage
@@ -18,26 +14,5 @@ type FolderPickerService(mainWindow: Window) =
             return
                 files
                 |> Seq.tryHead
-                |> Option.map
-                    (fun file ->
-                        let uri =
-                            file.Path.AbsolutePath
-                            |> System.Net.WebUtility.UrlDecode
-                            |> Uri
-
-                        uri.AbsolutePath)
+                |> Option.map _.Path.LocalPath
         }
-
-type Services() =
-    static let mutable container : IServiceProvider = null
-
-    static member Container
-        with get() = container
-
-    static member Init mainWindow =
-        let services = ServiceCollection()
-        services.AddSingleton<FolderPickerService>(FolderPickerService(mainWindow)) |> ignore
-        container <- services.BuildServiceProvider()
-
-    static member Get<'Svc>() =
-        container.GetRequiredService<'Svc>()

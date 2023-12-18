@@ -2,13 +2,16 @@
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:domain="using:Shoo.Domain"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:uiUtilities="using:Shoo.UIUtilities"
         xmlns:vm="using:Shoo.ViewModels"
         Title="Shoo"
+        Width="1200"
         d:DesignHeight="450"
         d:DesignWidth="800"
-        Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.designVM}}"
+        x:DataType="vm:MainWindowViewModel"
+        Design.DataContext="{Binding Source={x:Static vm:MainWindowViewModel.DesignVM}}"
         Icon="/Assets/avalonia-logo.ico"
         mc:Ignorable="d">
     <Window.Styles>
@@ -116,9 +119,17 @@
                       OffContent="Inactive"
                       OnContent="Active" />
 
+        <StackPanel Grid.Row="1"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button Command="{Binding ClearCompletedFiles}"
+                    Content="Clear Completed"
+                    IsEnabled="{Binding CanClearCompletedFiles}" />
+        </StackPanel>
+
         <DataGrid Grid.Row="2"
                   IsEnabled="{Binding IsActive}"
-                  ItemsSource="{Binding Files}">
+                  ItemsSource="{Binding FileQueue}">
             <DataGrid.Columns>
                 <DataGridTextColumn Width="*"
                                     Binding="{Binding FileName}"
@@ -144,16 +155,31 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid>
-                                <ProgressBar MinWidth="1"
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ProgressBar Grid.Column="0"
+                                             MinWidth="1"
                                              Margin="10 0"
-                                             Classes.Completed="{Binding MoveStatus,
+                                             VerticalAlignment="Center"
+                                             Classes.Completed="{Binding Status,
                                                                          Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                                         ConverterParameter={x:Static vm:MoveFileStatus.Complete}}"
-                                             Classes.Failed="{Binding Path=MoveStatus,
+                                                                         ConverterParameter={x:Static domain:MoveFileStatus.Complete}}"
+                                             Classes.Failed="{Binding Path=Status,
                                                                       Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
-                                                                      ConverterParameter={x:Static vm:MoveFileStatus.Failed}}"
+                                                                      ConverterParameter={x:Static domain:MoveFileStatus.Failed}}"
                                              ShowProgressText="True"
-                                             Value="{Binding MoveProgress}" />
+                                             Value="{Binding Progress}" />
+
+                                <Button Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding RemoveFile}"
+                                        Content="Remove"
+                                        IsVisible="{Binding Status,
+                                                            Converter={x:Static uiUtilities:ValueEqualsParameterConverter.Instance},
+                                                            ConverterParameter={x:Static domain:MoveFileStatus.Complete}}" />
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
