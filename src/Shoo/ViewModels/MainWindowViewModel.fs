@@ -2,9 +2,6 @@
 
 open System
 open System.Collections.Generic
-open System.Reactive.Linq
-
-open FSharp.Control.Reactive
 
 open DynamicData
 open ReactiveElmish
@@ -51,18 +48,12 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
         let copyEngine = CopyFileEngine.create progress
         this.AddDisposable copyEngine
 
-        let connect = store.Model.FileQueue.Connect()
-
-        connect
-            .WhereReasonsAre(ChangeReason.Add)
-            .Flatten()
-            .Select(fun change -> change.Current)
-        |> Observable.subscribe (mkCopyOperation >> copyEngine.Queue)
-        |> this.AddDisposable
-
-        connect
+        store.Model.FileQueue.Connect()
             .TransformWithInlineUpdate(
-                (fun file -> new FileViewModel(file)),
+                (fun file ->
+                    file |> mkCopyOperation |> copyEngine.Queue
+
+                    new FileViewModel(file)),
                 (fun viewModel file ->
                     viewModel.Progress <- file.Progress
                     viewModel.Status <- file.Status))
