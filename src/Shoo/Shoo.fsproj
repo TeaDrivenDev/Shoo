@@ -36,7 +36,7 @@
     <PackageReference Include="DynamicData" Version="8.3.27" />
     <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="ReactiveElmish.Avalonia" Version="1.1.0-beta.4" />
+    <PackageReference Include="ReactiveElmish.Avalonia" Version="1.1.0" />
     <PackageReference Include="System.Reactive" Version="6.0.0" />
   </ItemGroup>
 </Project>

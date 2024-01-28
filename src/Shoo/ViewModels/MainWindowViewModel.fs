@@ -79,10 +79,10 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
                 |> Seq.exists (fun file -> file.Status = Complete))
 
     member this.FileQueue = 
-        this.BindMap(
+        this.BindKeyedList(
             store
             , _.FileQueue
-            , transform = 
+            , map = 
                 fun file ->
                     file |> mkCopyOperation |> copyEngine.Queue
                     new FileViewModel(file)
