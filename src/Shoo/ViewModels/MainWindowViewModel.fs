@@ -1,9 +1,7 @@
 ﻿namespace Shoo.ViewModels
 
 open System
-open System.Collections.Generic
 
-open DynamicData
 open ReactiveElmish
 open ReactiveUI
 
@@ -38,30 +36,10 @@ type FileViewModel(file: File) =
 type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
     inherit ReactiveElmishViewModel()
 
-    let mutable fileQueue = Unchecked.defaultof<_>
+    let progress = Progress(UpdateFileStatus >> store.Dispatch)
 
-    let createFileViewModel (file: Shoo.Domain.File) = new FileViewModel(file)
-
-    do
-        let progress = Progress(UpdateFileStatus >> store.Dispatch)
-
-        let copyEngine = CopyFileEngine.create progress
-        this.AddDisposable copyEngine
-
-        store.Model.FileQueue.Connect()
-            .TransformWithInlineUpdate(
-                (fun file ->
-                    file |> mkCopyOperation |> copyEngine.Queue
-
-                    new FileViewModel(file)),
-                (fun viewModel file ->
-                    viewModel.Progress <- file.Progress
-                    viewModel.Status <- file.Status))
-            .Sort(Comparer.Create(fun (x: FileViewModel) y -> DateTime.Compare(x.Time, y.Time)))
-            .Bind(&fileQueue)
-            .DisposeMany()
-            .Subscribe()
-        |> this.AddDisposable
+    let copyEngine = CopyFileEngine.create progress
+    do this.AddDisposable copyEngine
 
     member this.SourceDirectory
         with get () = this.Bind(store, _.SourceDirectory.Path)
@@ -95,10 +73,26 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
         this.Bind(
             store,
             fun model ->
-                model.FileQueue.Items
+                model.FileQueue
+                |> Map.toSeq
+                |> Seq.map snd
                 |> Seq.exists (fun file -> file.Status = Complete))
 
-    member this.FileQueue = fileQueue
+    member this.FileQueue = 
+        this.BindKeyedList(
+            store
+            , _.FileQueue
+            , map = 
+                fun file ->
+                    file |> mkCopyOperation |> copyEngine.Queue
+                    new FileViewModel(file)
+            , getKey = _.FullName
+            , update = 
+                fun file viewModel ->
+                    viewModel.Progress <- file.Progress
+                    viewModel.Status <- file.Status
+            , sortBy = _.Time
+        )
 
     member this.SelectSourceDirectory() =
         task {
@@ -112,7 +106,8 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
             return store.Dispatch(UpdateDestinationDirectory path)
         }
 
-    member this.ClearCompletedFiles () = store.Dispatch ClearCompleted
+    member this.ClearCompletedFiles () = 
+        store.Dispatch ClearCompleted
 
-    static member DesignVM =
+    static member DesignVM = 
         new MainWindowViewModel(Design.stub)

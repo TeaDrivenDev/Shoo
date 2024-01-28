@@ -3,10 +3,8 @@
 open System
 open System.IO
 
-open DynamicData
 open Elmish
 open FSharp.Control.Reactive
-open ReactiveElmish
 open ReactiveElmish.Avalonia
 
 open Shoo.Domain
@@ -57,7 +55,7 @@ module App =
             FileTypes: string
             ReplacementsFileName: string
             IsActive: bool
-            FileQueue: SourceCache<File, string>
+            FileQueue: Map<string, File>
         }
 
     type Message =
@@ -82,7 +80,7 @@ module App =
             FileTypes = ""
             ReplacementsFileName = ""
             IsActive = false
-            FileQueue = SourceCache.create _.FullName
+            FileQueue = Map.empty
         }
         |> withoutCommand
 
@@ -105,29 +103,33 @@ module App =
         | QueueFileCopy path ->
             let file = mkFile path model.DestinationDirectory.Path
             { model with
-                FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
+                FileQueue = model.FileQueue.Add(file.FullName, file)
             } |> withoutCommand
         | UpdateFileStatus (fileName, progress, moveFileStatus) ->
-            let file = model.FileQueue.Lookup fileName
+            let file = model.FileQueue[fileName]
 
-            let updatedFile = { file.Value with Progress = progress; Status = moveFileStatus }
+            let updatedFile = { file with Progress = progress; Status = moveFileStatus }
             { model with
-                FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile
+                FileQueue = model.FileQueue.Add(updatedFile.FullName, updatedFile)
             } |> withoutCommand
         | RemoveFile fileFullName ->
             { model with
-                FileQueue = model.FileQueue |> SourceCache.removeKey fileFullName
+                FileQueue = model.FileQueue.Remove fileFullName
             } |> withoutCommand
         | ClearCompleted ->
             let completedFiles =
-                model.FileQueue.Items
+                model.FileQueue
+                |> Map.toSeq
+                |> Seq.map snd
                 |> Seq.filter (fun file -> file.Status = Complete)
                 |> Seq.map _.FullName
-                |> Seq.toList
+                
+            // Remove completed files from the queue
+            let fileQueue: Map<string, File> = 
+                completedFiles 
+                |> Seq.fold (fun queue file -> queue.Remove file) model.FileQueue
 
-            model.FileQueue.RemoveKeys completedFiles
-
-            model |> withoutCommand
+            { model with FileQueue = fileQueue } |> withoutCommand
 
         | Terminate -> model |> withoutCommand
 
