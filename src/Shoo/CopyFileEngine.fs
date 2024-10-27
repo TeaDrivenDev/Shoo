@@ -43,39 +43,46 @@ module CopyFileEngine =
                     async {
                         let! message = inbox.Receive()
 
-                        use fileStream =
-                            new FileStream(
-                                message.Source,
-                                FileStreamOptions(
-                                    Access = FileAccess.Read,
-                                    BufferSize = Constants.ChunkSize,
-                                    Mode = FileMode.Open,
-                                    Options =
-                                        (FileOptions.Asynchronous ||| FileOptions.SequentialScan),
-                                    Share = FileShare.Read))
+                        let fileStream =
+                            try
+                                new FileStream(
+                                    message.Source,
+                                    FileStreamOptions(
+                                        Access = FileAccess.Read,
+                                        BufferSize = Constants.ChunkSize,
+                                        Mode = FileMode.Open,
+                                        Options =
+                                            (FileOptions.Asynchronous ||| FileOptions.SequentialScan),
+                                        Share = FileShare.Read))
+                                |> Some
+                            with
+                            | _ -> None // TODO Report error in some way
 
-                        writeActor.Post(Start message)
+                        match fileStream with
+                        | Some fileStream ->
+                            writeActor.Post(Start message)
 
-                        let rec innerLoop (bytesRead, buffer)  =
-                            async {
-                                match bytesRead with
-                                | 0 ->
-                                    fileStream.Close()
-                                    fileStream.Dispose()
+                            let rec innerLoop (bytesRead, buffer)  =
+                                async {
+                                    match bytesRead with
+                                    | 0 ->
+                                        fileStream.Close()
+                                        fileStream.Dispose()
 
-                                    writeActor.Post (Finish message.Destination)
-                                | _ ->
-                                    writeActor.Post
-                                        (Bytes {| FileName = message.Destination; Bytes = buffer |})
+                                        writeActor.Post (Finish message.Destination)
+                                    | _ ->
+                                        writeActor.Post
+                                            (Bytes {| FileName = message.Destination; Bytes = buffer |})
 
-                                    let! bytesRead, buffer = readChunk fileStream
+                                        let! bytesRead, buffer = readChunk fileStream
 
-                                    return! innerLoop (bytesRead, buffer)
-                            }
+                                        return! innerLoop (bytesRead, buffer)
+                                }
 
-                        let! bytesRead, buffer = readChunk fileStream
+                            let! bytesRead, buffer = readChunk fileStream
 
-                        do! innerLoop (bytesRead, buffer)
+                            do! innerLoop (bytesRead, buffer)
+                        | None -> inbox.Post message
 
                         return! loop ()
                     }
