@@ -57,8 +57,7 @@ type MainWindowViewModel(folderPicker: Services.FolderPickerService) as this =
                 (fun viewModel file ->
                     viewModel.Progress <- file.Progress
                     viewModel.Status <- file.Status))
-            .Sort(Comparer.Create(fun (x: FileViewModel) y -> DateTime.Compare(x.Time, y.Time)))
-            .Bind(&fileQueue)
+            .SortAndBind(&fileQueue, Comparer.Create(fun (x: FileViewModel) y -> DateTime.Compare(x.Time, y.Time)))
             .DisposeMany()
             .Subscribe()
         |> this.AddDisposable
