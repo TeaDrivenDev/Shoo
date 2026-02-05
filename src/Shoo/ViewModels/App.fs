@@ -14,6 +14,11 @@ open Shoo.Domain
 module App =
     let withoutCommand model = model, Cmd.none
 
+    let updateIfSome createUpdatedModel model value =
+        value
+        |> Option.map (createUpdatedModel model)
+        |> Option.defaultValue model
+
     let createConfiguredDirectory path =
         {
             Path = path
@@ -89,16 +94,14 @@ module App =
     let update message model =
         match message with
         | UpdateSourceDirectory value ->
-            value
-            |> Option.map
-                (fun path -> { model with SourceDirectory = createConfiguredDirectory path })
-            |> Option.defaultValue model
+            (model, value)
+            ||> updateIfSome
+                (fun model path -> { model with SourceDirectory = createConfiguredDirectory path })
             |> withoutCommand
         | UpdateDestinationDirectory value ->
-            value
-            |> Option.map
-                (fun path -> { model with DestinationDirectory = createConfiguredDirectory path})
-            |> Option.defaultValue model
+            (model, value)
+            ||> updateIfSome
+                (fun model path -> { model with DestinationDirectory = createConfiguredDirectory path})
             |> withoutCommand
         | UpdateFileTypes fileTypes -> { model with FileTypes = fileTypes } |> withoutCommand
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
