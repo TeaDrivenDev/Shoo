@@ -107,20 +107,18 @@ module App =
         | ChangeActive active -> { model with IsActive = active } |> withoutCommand
         | QueueFileCopy path ->
             let file = mkFile path model.DestinationDirectory.Path
-            { model with
-                FileQueue = model.FileQueue |> SourceCache.addOrUpdate file
-            } |> withoutCommand
+
+            { model with FileQueue = model.FileQueue |> SourceCache.addOrUpdate file }
+            |> withoutCommand
         | UpdateFileStatus (fileName, progress, moveFileStatus) ->
             let file = model.FileQueue.Lookup fileName
 
             let updatedFile = { file.Value with Progress = progress; Status = moveFileStatus }
-            { model with
-                FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile
-            } |> withoutCommand
+            { model with FileQueue = model.FileQueue |> SourceCache.addOrUpdate updatedFile }
+            |> withoutCommand
         | RemoveFile fileFullName ->
-            { model with
-                FileQueue = model.FileQueue |> SourceCache.removeKey fileFullName
-            } |> withoutCommand
+            { model with FileQueue = model.FileQueue |> SourceCache.removeKey fileFullName }
+            |> withoutCommand
         | ClearCompleted ->
             let completedFiles =
                 model.FileQueue.Items
@@ -151,9 +149,10 @@ module App =
 
             watcher.EnableRaisingEvents <- true
 
-            Disposable.create (fun () ->
-                watcher.Dispose()
-                subscription.Dispose())
+            Disposable.create
+                (fun () ->
+                    watcher.Dispose()
+                    subscription.Dispose())
 
         [
             if model.IsActive then
